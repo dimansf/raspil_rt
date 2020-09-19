@@ -14,6 +14,9 @@ class Program:
         self.map_lmeasures = None
         self.calc_map_longmeasures()
  
+    def main(self):
+        data = one_iteration()
+
 
     def calc_map_longmeasures(self):
         res = dict()
@@ -43,43 +46,51 @@ class Program:
         return final_len >= -self.width_saw \
             and (lower >= final_len or sb.min_len <= final_len)
     
-    def one_iteration(self):
-        res = self.calc_per_id()
+    def one_iteration(self, ids=[]):
+        # провели расчеты по каждому идшнику
+        res = self.calc_per_id(ids)
         # выбрать оптимальную комбинацию
-        for id_res in res:
-            self.select_optimal_combination(id_res)
-    def calc_per_id(self):
         
-        results = dict()
-        for id in self.ids:
-            self.current_id = id
-            brds = BoardCollection([x for x in self.boards if lambda x: x == id])
-            sbrds = StoreBoardCollection([x for x in self.store_boards if lambda x: x == id])
-            results[id] = self.calc_per_board(brds, sbrds)
-        return results
-        
-    def calc_per_board(self, boards:BoardCollection, store_boards:StoreBoardCollection):
-        res = dict()
-        for bs in store_boards:
-           res[bs]= self.calc(boards, bs)
-        return res
 
-    def calc(self, boards:BoardCollection, store_board:StoreBoard) ->BoardCombinations:
-        '''
-        Основная функция расчета на уровне без айдишников по одной доске склада
-        '''
-        #  получены все комбинации по простому условию
-        colls = self.form_combinations(BoardCollection(), 0, boards, store_board)
+    
 
+       
+    def filter_by_boards(self, boards:BoardCombinations, store_board:StoreBoard ):
         # отбор комбинации по условию рационального расхода материала
         # по optimize параметру
         if self.optimize:
             res = BoardCombinations()
-            for el in colls:
+            for el in boards:
                 if self.liquid_condition(el, store_board):
                     res.append(el)
             return res
-        return colls
+
+
+    def calc_per_id(self, sclad_ids=[]) -> Dict[int, List[BoardCombinations]]:
+        
+        results = dict()
+        for id in self.ids:
+            self.current_id = id
+            brds = BoardCollection([x for x in self.boards if lambda x: x == id and x.sclad_id in sclad_ids])
+            sbrds = StoreBoardCollection([x for x in self.store_boards if lambda x: x == id and x.sclad_id in sclad_ids])
+            results[id] = self.calc_per_board(brds, sbrds)
+        
+        return results
+        
+    def calc_per_board(self, boards:BoardCollection, store_boards:StoreBoardCollection)-> List[BoardCombinations]:
+        '''
+        Основная функция расчета на уровне без айдишников по одной доске склада
+        '''
+        res = []
+        for bs in store_boards:
+        #  получены все комбинации по простому условию
+           res.append(self.form_combinations(BoardCollection(), 0, boards, bs))
+        return res
+
+    # def calc(self, boards:BoardCollection, store_board:StoreBoard) ->BoardCombinations:
+        
+    #     return self.form_combinations(BoardCollection(), 0, boards, store_board)
+
     
     
     def form_combinations(self, current_collection:BoardCollection, index:int, boards:BoardCollection, store_board:StoreBoard) -> BoardCombinations:
@@ -89,11 +100,11 @@ class Program:
         try:
             board:Board = boards[index]
         except:
-            return BoardCombinations()
+            return BoardCombinations(store_board)
 
-        a = BoardCombinations()
+        a = BoardCombinations(store_board)
         for i in range(0,board.amount+1):
-            if store_board.len >= board.len + len(current_collection):
+            if store_board.len >= board.len * i + len(current_collection):
                 cs = BoardCollection.copy(current_collection)
                 if i != 0:
                     cs.append(Board.copy(board, i)) 
