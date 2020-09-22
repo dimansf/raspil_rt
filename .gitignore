@@ -1,0 +1,6 @@
+/test2/
+*__pycache__/
+*.mypy_cache/
+*/tests/dst/
+
+/test2/

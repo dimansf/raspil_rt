@@ -1,6 +1,6 @@
 from raspil_rt.data_structs.StoreBoard import StoreBoard, StoreBoardCollection
-from typing import List, Dict, NamedTuple
-from .data_structs.Board import Board, BoardCollection, BoardCombinations
+from typing import List, Dict, NamedTuple, Union
+from .data_structs.Board import Board, BoardCollection, BoardCombinations, MapResult
 
 
 class Program:
@@ -11,91 +11,98 @@ class Program:
         self.optimize = optimize
         self.sclad_max = sclad_max
         self.width_saw = width_saw
-        self.current_id = 0
+
         self.ids = set([x.id for x in self.boards])
-        self.map_lmeasures = None
-        self.sclad_map = {'longs': (3, 4, 5), 'shorts': (1, 2)}
+
+        self.sclad_map = {
+            'longs': (3, 4, 5),
+            'shorts': (1, 2)
+        }
         self.calc_map_longmeasures()
-        self.raspile_map = None
+        self.map_result = MapResult()
 
     def main(self):
-        while(self.iteration(self.sclad_map['shorts']
-                             if self.sclad_max else self.sclad_map['longs']) != 0):
-            pass
-        while(self.iteration(self.sclad_map['shorts'] + self.sclad_map['longs']) != 0):
-            pass
+        counter = 0
+        while(not self.iteration(self.sclad_map['shorts']
+                                 if self.sclad_max else self.sclad_map['longs'])):
+            if counter > 1000:
+                break
+            counter += 1
+        while(not self.iteration(self.sclad_map['shorts'] + self.sclad_map['longs'])):
+            if counter > 1000:
+                break
+            counter += 1
 
-    def iteration(self, sclad_id=[]) -> int:
-        pass
+    def iteration(self, sclad_id=[]) -> bool:
+        map_r = self.calc_per_id(sclad_id)
+        self.iteration_subtraction(map_r)
+        self.map_result += map_r
+        return map_r.is_empty()
+
+    def iteration_subtraction(self, mr: MapResult):
+        for m in mr.values():
+            for d in m.keys():
+                self.boards -= d[0]
+                self.store_boards -= StoreBoardCollection([d.store_board])
 
     def calc_map_longmeasures(self):
         res = dict()
-        lngms = [x for x in self.store_boards if lambda x: x.sclad_id == 5]
+        #  процент нижней границы высчитывается из максимальной палки с 5 склада
+        lngms = [x for x in self.store_boards if x.sclad_id == 5]
         for x in lngms:
-            res[x.id] = x.len
+            res[x.id] = x.len if res.get(x.id, 0) < x.len else res[x.id]
         self.map_lmeasures = res
 
-    def select_optimal_combination(self, cmb: Dict[StoreBoard, StoreBoardCollection]):
-        for board in cmb.keys():
-            pass
-
-    def liquid_condition(self, bc: BoardCombinations):
-        sb = bc.store_board
-        try:
-            current_lmeasure = self.map_lmeasures[self.current_id]
-        except:
-            current_lmeasure = 6000
-        for ic in range(len(bc)):
-            fl = False
-            cc = bc[ic]
-            cr = sb.len - len(cc)
-            lower = current_lmeasure * sb.remain_per * 0.01
-            final_len = cr - cc.total_amount() * self.width_saw
-            # условие если распил не умещается в одну доску
-            if cc.total_amount() == 1 and len(cc)*2 > current_lmeasure:
-                fl = True
-            fl = fl or (final_len >= -self.width_saw
-                        and (lower >= final_len or sb.min_len <= final_len))
-            if not fl:
-                del bc[ic]
-
-    def thinning(self, res: List[BoardCombinations]):
+    def optimize_selection(self, res: List[BoardCombinations]) -> Dict[BoardCombinations, int]:
+        bests: List[BoardCombinations] = []
         for bc in res:
-            self.liquid_condition(bc)
+            bests.append(bc.calc_best_combination(self.optimize,
+                                                  self.map_lmeasures[bc.store_board.id],
+                                                  self.width_saw,
+                                                  self.sclad_map['longs']))
+        try:
+            best = bests.pop()
+        except:
+            return {}
+        for bb in bests:
+            if best.payload < bb.payload:
+                best = bb
+        return {best: 1}
 
-    def calc_per_id(self, sclad_ids=[]) -> Dict[int, List[BoardCombinations]]:
-
-        results = dict()
+    def calc_per_id(self, sclad_ids=[]) -> MapResult:
+        results = MapResult()
         for id in self.ids:
-            self.current_id = id
             brds = BoardCollection(
-                [x for x in self.boards if lambda x: x.id == id])
+                [x for x in self.boards if x.id == id])
             sbrds = StoreBoardCollection(
-                [x for x in self.store_boards if lambda x: x.id == id and x.sclad_id in sclad_ids])
+                [x for x in self.store_boards if x.id == id and x.sclad_id in sclad_ids])
 
-            results[id] = self.calc_per_board(brds, sbrds)
+            res = self.optimize_selection(
+                self.calc_per_boards(brds, sbrds))
+            if sum([len(x[0]) for x in res.keys()]) != 0:
+                results[id] = res  # type:ignore
 
         return results
 
-    def calc_per_board(self, boards: BoardCollection, store_boards: StoreBoardCollection) -> List[BoardCombinations]:
+    def calc_per_boards(self, boards: BoardCollection, store_boards: StoreBoardCollection):
         '''
-        Основная функция расчета на уровне без айдишников по одной доске склада
+        Палка и ее возможный список распилов
         '''
-        res:List[BoardCombinations] = []
+        res: List[BoardCombinations] = []
         for bs in store_boards:
             #  получены все комбинации по простому условию
             res.append(self.form_combinations(
                 BoardCollection(), 0, boards, bs))
-
-        if self.optimize:
-            self.thinning(res)
         return res
 
-    # def calc(self, boards:BoardCollection, store_board:StoreBoard) ->BoardCombinations:
+    def can_to_saw(self, coll: BoardCollection, b: Board, i: int, bs: StoreBoard):
+        ttl = coll.len + coll.amount * self.width_saw + b.len * i + i * self.width_saw
+        if bs.len - ttl >= - self.width_saw:
+            return True
+        return False
 
-    #     return self.form_combinations(BoardCollection(), 0, boards, store_board)
-
-    def form_combinations(self, current_collection: BoardCollection, index: int, boards: BoardCollection, store_board: StoreBoard) -> BoardCombinations:
+    def form_combinations(self, current_collection: BoardCollection,
+                          index: int, boards: BoardCollection, store_board: StoreBoard) -> BoardCombinations:
         '''
         Просчет комбинаций через рекурсивный перебор с условием на превышение длины summ(boards) < boards_len
         '''
@@ -106,8 +113,9 @@ class Program:
 
         a = BoardCombinations(store_board)
         for i in range(0, board.amount+1):
-            if store_board.len >= board.len * i + len(current_collection):
-                cs = BoardCollection.copy(current_collection)
+            if self.can_to_saw(current_collection, board, i, store_board):
+                cs = BoardCollection.copy(
+                    current_collection) if i != 0 else current_collection
                 if i != 0:
                     cs.append(Board.copy(board, i))
                     a.append(cs)

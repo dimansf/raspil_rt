@@ -1,24 +1,59 @@
-from raspil_rt.data_structs.Board import BoardCollection
+
 from ..data_structs.StoreBoard import *
+import unittest
 
-x1 = StoreBoard(id=2732,  len=2164, amount=4, min_len=210, remain_per=4,  sclad_id=2)
-x11 = StoreBoard(id=2732,  len=2164, amount=5, min_len=210, remain_per=4,  sclad_id=2)
-x2 = StoreBoard(id=232,  len=2164, amount=1, min_len=210, remain_per=4,  sclad_id=2)
-
-xs = StoreBoard(id=2732,  len=2164, amount=9, min_len=210, remain_per=4,  sclad_id=2)
-
-
-store_boards = [
-    [2732, 2164, 1, 210, 4, 2], 
-    [2732, 2164, 10, 210, 4, 2], 
-    [66, 2827, 1, 1500, 4, 2], 
-    [ 66, 264, 1, 1500, 4, 1], 
-    [ 66, 264, 11, 1500, 4, 1], 
-    [10946, 272, 19, 1000, 4, 1]
+# store_boards = [
+#     [2732, 2164, 1, 210, 4, 2], 
+#     [2732, 2164, 10, 210, 4, 2], 
+#     [66, 2827, 1, 1500, 4, 2], 
+#     [ 66, 264, 1, 1500, 4, 1], 
+#     [ 66, 264, 11, 1500, 4, 1], 
+#     [10946, 272, 19, 1000, 4, 1]
+sb = [
+    [1, 1000, 1, 200, 4, 2],
+    [1, 1000, 5, 200, 4, 2],
 ]
-print(StoreBoardCollection([StoreBoard(*x) for x in store_boards ]))
-print(len(StoreBoardCollection([StoreBoard(*x) for x in store_boards ])) == 4)
 
-print(x1 == x11)
-print(hash(x1) != hash(x11))
-print(hash(xs) == hash(x1+x11))
+
+class StoreBoardTests(unittest.TestCase):
+    def setUp(self):
+        self.b1 = StoreBoard(*sb[0])
+        self.b2 = StoreBoard(*sb[1])
+
+    def tearDown(self):
+        pass
+
+    def test_equal(self):
+        b =StoreBoard(*sb[0])
+        b.amount = 10
+        self.assertEqual(self.b1, b)
+    
+    def test_isub(self):
+        b =StoreBoard(*sb[0])
+        b -= self.b1
+        self.assertEqual(b.amount, 0)
+        with self.assertRaises(NegativeSubtraction):
+            b -= self.b1
+    def test_sub(self):
+        b =StoreBoard(*sb[0])
+        b += self.b1
+        self.assertEqual(b.amount, 2)
+
+
+class StoreBoardCollectionTests(unittest.TestCase):
+    def setUp(self):
+        self.sb = StoreBoardCollection([StoreBoard(*x) for x in sb])  
+      
+
+    def tearDown(self):
+        pass
+
+    def test_isub(self):
+       ss = StoreBoardCollection([StoreBoard(*x) for x in sb]) 
+       ss -= self.sb
+       self.assertEqual(len(ss), 0)
+    def test_append(self):
+        ss = StoreBoardCollection([StoreBoard(*x) for x in sb])
+        ss.append(self.sb[0])
+        self.assertEqual(sum([x.amount for x in ss]), 12) 
+        
