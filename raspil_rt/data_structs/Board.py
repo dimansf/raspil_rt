@@ -156,6 +156,7 @@ class BoardCombinations(List[BoardCollection]):
         return hash(''.join(set(d1)))
     def __str__(self) -> str:
         s = 'Board Combinations: { \n'
+        s+= f'source is {self.store_board} \n'
         for x in self:
             s += f'\t{x}\n'
         return s + '\n \t}'
@@ -179,10 +180,11 @@ class MapResult(Dict[int, Dict[BoardCombinations, int]]):
 
     def __str__(self):
         s = 'Map result: {\n'
-        for x in self:
-            s += f'\tId: {self[x]} => [ \n'
-            for elems in self[x]:
-                s += f'\t\tAmount: {self[x][elems]} => [ \n]'
+        for x in self.keys():
+            s += f'\tId: {x} => [ \n'
+            d_comb = self[x]
+            for elems in d_comb.keys():
+                s += f'\t\tAmount: {d_comb[elems]} => [ \n]'
                 s += f'\t\t\t {elems}'
                 s += '\t\t] \n'
             s += '\t] \n'

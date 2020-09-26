@@ -32,6 +32,11 @@ class Program:
             if counter > 1000:
                 break
             counter += 1
+        self.optimize = False
+        while(not self.iteration(self.sclad_map['shorts'] + self.sclad_map['longs'])):
+            if counter > 1000:
+                break
+            counter += 1
 
     def iteration(self, sclad_id=[]) -> bool:
         map_r = self.calc_per_id(sclad_id)

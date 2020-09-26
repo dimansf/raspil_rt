@@ -1,4 +1,4 @@
-from ..main import *
+from ..main import Program
 import json
 import unittest
 
