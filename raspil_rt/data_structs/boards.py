@@ -7,7 +7,7 @@ class Board:
     Абстракция доски в распиле пришедшей в заказ
     '''
 
-    def __init__(self, id, len, amount) -> None:
+    def __init__(self, id:int, len:int, amount:int) -> None:
         self.id = id
         self.len = len
         self.amount = amount
@@ -26,7 +26,7 @@ class Board:
                 raise NegativeSubtraction
         return self
 
-    def __iadd__(self, other):
+    def __iadd__(self, other: 'Board'):
         if self == other:
             self.amount += other.amount
         return self
