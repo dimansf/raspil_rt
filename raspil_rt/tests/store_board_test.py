@@ -1,5 +1,5 @@
 
-from ..data_structs.StoreBoard import *
+from ..data_structs.store_boards import *
 import unittest
 
 # store_boards = [

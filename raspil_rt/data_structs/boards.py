@@ -1,4 +1,4 @@
-from raspil_rt.data_structs.StoreBoard import StoreBoard, NegativeSubtraction
+from raspil_rt.data_structs.store_boards import StoreBoard, NegativeSubtraction
 from typing import Callable, Tuple, List, List, Dict
 
 
