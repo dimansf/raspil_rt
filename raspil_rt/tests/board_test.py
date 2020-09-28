@@ -46,7 +46,7 @@ class BoardTests(unittest.TestCase):
         self.assertEqual(b.amount, 11)
 
     def test_eq(self):
-        b =Board.copy(self.b2) 
+        b = Board.copy(self.b2)
         b -= self.b2
         self.assertEqual(self.b1, b)
 
@@ -63,14 +63,13 @@ class BoardTests(unittest.TestCase):
 class BoardCollectionTests(unittest.TestCase):
     def setUp(self):
         self.boards = BoardCollection([Board(*x) for x in b2])
-        
 
     def tearDown(self):
         pass
 
     def test_init(self):
         self.assertEqual(len(self.boards), 2)
-    
+
     def test_copy(self):
         b = BoardCollection.copy(self.boards)
         self.assertEqual(hash(b), hash(self.boards))
@@ -87,6 +86,7 @@ class BoardCollectionTests(unittest.TestCase):
         b = BoardCollection([Board(*x) for x in b2])
         b -= self.boards
         self.assertEqual(b.amount, 0)
+
     def test_eq(self):
         b1 = [[2, 100, 20], [1, 100, 20]]
         b2 = [[1, 100, 20], [2, 100, 20]]
@@ -123,21 +123,17 @@ class BoardCombinationsTests(unittest.TestCase):
         self.bc2.append(bcc1)
         self.bc2.append(bcc2)
 
-
-
     def tearDown(self):
         pass
 
     def test_calc_best_combination(self):
         res1 = self.bc1.calc_best_combination()
         self.assertEqual(res1[0], self.bcc2)
-        
-        
+
     def test_eq(self):
         res2 = self.bc1.calc_best_combination()
         res1 = self.bc2.calc_best_combination()
         self.assertEqual(self.bc1, self.bc2)
-        
 
 
 if __name__ == '__main__':
