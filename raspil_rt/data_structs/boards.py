@@ -1,5 +1,7 @@
-from raspil_rt.data_structs.storeBoards import StoreBoard, NegativeSubtraction
+from raspil_rt.data_structs.stack_element import StackElement
+from raspil_rt.data_structs.store_boards import StoreBoard, NegativeSubtraction
 from typing import Callable, ItemsView, Iterable, Tuple, List, List, Dict, Union
+
 
 
 class Board:
@@ -24,6 +26,8 @@ class Board:
 
     def __str__(self) -> str:
         return f' [{self.id}, {self.len},{self.store_id}] '
+    def __add__(self, other:Union['Board', StackElement]):
+        pass
 
 
 class NegativeValue(Exception):
@@ -35,7 +39,10 @@ if b == b2:
     c = b+b2 # -> элемент стопки StackElement [b, number]
     c += b  # -> StackElement + Board = StackElement
     c += c # -> StackElement + StackElement = StackElement
-class BoardStack(Dict[Board, int]):
+
+class BoardStack():
+    pass
+class BoardDict(Dict[Board, int]):
     def __init__(self, it: Iterable[Tuple[Board, int]] = {}):
         super().__init__()
         self.update(it)
