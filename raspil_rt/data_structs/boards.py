@@ -5,7 +5,7 @@ from typing import Callable, ItemsView, Iterable, Tuple, List, List, Dict, Union
 
 
 class Board:
-    def __init__(self, id, len, store_id=0 ,original=None):
+    def __init__(self, id, len, store_id=0 ):
         """
             Обьектное представление доски.
             Ее уникальность в комбинации айди длины и номер склада
@@ -15,7 +15,7 @@ class Board:
         self.id = id
         self.length = len
         self.store_id = store_id
-        self.original = original
+        
         
 
     def __eq__(self, o: 'Board') -> bool:
@@ -40,8 +40,7 @@ if b == b2:
     c += b  # -> StackElement + Board = StackElement
     c += c # -> StackElement + StackElement = StackElement
 
-class BoardStack():
-    pass
+
 class BoardDict(Dict[Board, int]):
     def __init__(self, it: Iterable[Tuple[Board, int]] = {}):
         super().__init__()

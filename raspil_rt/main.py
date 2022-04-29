@@ -1,28 +1,36 @@
 # from raspil_rt.data_structs.StoreBoard import StoreBoard, StoreBoardCollection
 from typing import Iterable, List, Dict, NamedTuple, Union
+
+from raspil_rt.data_structs.stack_element import BoardStack, StackElement
 # from .data_structs.boards import Board, BoardCollection, BoardCombinations, MapResult
 from .data_structs.boards import Board, BoardDict, _MapCombinations, DictCombinations
 
 
-class Program:
-    def __init__(self, boards: Iterable[Iterable[int]], storeBoards: Iterable[Iterable[int]],
-                 optimize=True, sclad_max=True, width_saw=4):
-        self.boards = BoardDict(
-            [(Board(x[0], x[1],  0, 0, 0), x[2]) for x in boards])
-        self.storeBoards = BoardDict(
-            [(Board(x[0], x[1],  x[3], x[4], x[5]), x[2]) for x in storeBoards])
-        self.optimize = optimize
-        self.sclad_max = sclad_max
-        self.width_saw = width_saw
 
-        self.ids = set([x.id for x in self.boards.keys()])
+def main(self, boards: Iterable[Iterable[int]], storeBoards: Iterable[Iterable[int]],
+                optimize=True, sclad_max=True, width_saw=4):
+    """
+    optimize - использовать как можно больше досок без учета оптимальности распила
+    width_saw - толщина пилы при отпиле досок в мм
+    sclad_max - пилить все что есть на складе только потом брать из заказанных
+    """
+    self.boards = BoardStack(
+        [ StackElement(Board(x[0], x[1]), x[2]) for x in boards], boards)
+    self.storeBoards = BoardStack(
+        [StackElement(Board(x[0], x[1],  x[3]), x[2]) for x in storeBoards],storeBoards)
+    self.optimize = optimize
+    self.sclad_max = sclad_max
+    self.width_saw = width_saw
 
-        self.sclad_map = {
-            'longs': (3, 4, 5),
-            'shorts': (1, 2)
-        }
-        # self.calc_map_longmeasures()
-        self.map_result = _MapCombinations()
+    self.ids = set([x.id for x in self.boards.keys()])
+
+    self.sclad_map = {
+        'longs': (3, 4, 5),
+        'shorts': (1, 2)
+    }
+    
+    # self.calc_map_longmeasures()
+    self.map_result = _MapCombinations()
 
     # def main(self):
     #     counter = 0
@@ -92,38 +100,38 @@ class Program:
 
     #     return results
 
-    def calculate_perBoards(self, boards: BoardDict, storeBoards: BoardDict) -> DictCombinations:
-        '''
-        Палка и ее возможный список распилов
-        '''
-        res = DictCombinations()
-        for bs in storeBoards:
-            res[bs] = self._combinate(BoardDict(),  boards, bs)
-        return res
+def calculate_perBoards(self, boards: BoardDict, storeBoards: BoardDict) -> DictCombinations:
+    '''
+    Палка и ее возможный список распилов
+    '''
+    res = DictCombinations()
+    for bs in storeBoards:
+        res[bs] = self._combinate(BoardDict(),  boards, bs)
+    return res
 
-    def can_to_saw(self, coll: BoardDict, b: Board, i: int, bs: Board):
-        ttl = coll.length + coll.amount * self.width_saw + b.len * i + i * self.width_saw
-        if bs.len - ttl >= - self.width_saw and i != 0:
-            return True
-        return False
+def can_to_saw(self, coll: BoardDict, b: Board, i: int, bs: Board):
+    ttl = coll.length + coll.amount * self.width_saw + b.len * i + i * self.width_saw
+    if bs.len - ttl >= - self.width_saw and i != 0:
+        return True
+    return False
 
-    def _combinate(self, current_collection: BoardDict, boards: BoardDict, storeBoard: Board) -> List[BoardDict]:
-        try:
-            currentBoard, amount = boards.popitem() # popitem выдает пары в LIFO порядке
-        except KeyError:
-            return []
-        res = []
-        overf = 0
-        for i in range(amount+1):
-            cc = current_collection.copy()
-            if  self.can_to_saw(cc, currentBoard, i, storeBoard):
-                cc[currentBoard] = i
-                res.append(cc)
-            else: overf += 1
-            if overf == 2: break
-            res += self._combinate(cc, boards, storeBoard)  
-        boards[currentBoard] = amount  
-        return res    
+def _combinate(self, current_collection: BoardDict, boards: BoardDict, storeBoard: Board) -> List[BoardDict]:
+    try:
+        currentBoard, amount = boards.popitem() # popitem выдает пары в LIFO порядке
+    except KeyError:
+        return []
+    res = []
+    overf = 0
+    for i in range(amount+1):
+        cc = current_collection.copy()
+        if  self.can_to_saw(cc, currentBoard, i, storeBoard):
+            cc[currentBoard] = i
+            res.append(cc)
+        else: overf += 1
+        if overf == 2: break
+        res += self._combinate(cc, boards, storeBoard)  
+    boards[currentBoard] = amount  
+    return res    
 
     # def form_combinations(self, current_collection: BoardDict,
     #                       index: int, boards: BoardDict, storeBoard: Board) -> BoardCombination:
