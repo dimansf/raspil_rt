@@ -1,7 +1,7 @@
 # from raspil_rt.data_structs.StoreBoard import StoreBoard, StoreBoardCollection
 from typing import Iterable, List, Dict, NamedTuple, Union
 # from .data_structs.boards import Board, BoardCollection, BoardCombinations, MapResult
-from .data_structs.boards import _Board, _BoardDict, _MapCombinations, _BoardCombination
+from .data_structs.boards import _Board, _BoardDict, _MapCombinations, DictCombinations
 
 
 class Program:
@@ -92,16 +92,14 @@ class Program:
 
     #     return results
 
-    # def calculate_per_boards(self, boards: _BoardDict, store_boards: _BoardDict):
-    #     '''
-    #     Палка и ее возможный список распилов
-    #     '''
-    #     res: _BoardCombination = []
-    #     for bs in store_boards:
-    #         #  получены все комбинации по простому условию
-    #         res.append(self.form_combinations(
-    #             _BoardDict(), 0, boards, bs))
-    #     return res
+    def calculate_per_boards(self, boards: _BoardDict, store_boards: _BoardDict) -> DictCombinations:
+        '''
+        Палка и ее возможный список распилов
+        '''
+        res = DictCombinations()
+        for bs in store_boards:
+            res[bs] = self._combinate(_BoardDict(),  boards, bs)
+        return res
 
     def can_to_saw(self, coll: _BoardDict, b: _Board, i: int, bs: _Board):
         ttl = coll.length + coll.amount * self.width_saw + b.len * i + i * self.width_saw
@@ -109,12 +107,12 @@ class Program:
             return True
         return False
 
-    def _combinate(self, current_collection: _BoardDict, boards: _BoardDict, store_board: _Board) -> _BoardCombination:
+    def _combinate(self, current_collection: _BoardDict, boards: _BoardDict, store_board: _Board) -> List[_BoardDict]:
         try:
             current_board, amount = boards.popitem() # popitem выдает пары в LIFO порядке
         except KeyError:
-            return _BoardCombination(store_board)
-        res = _BoardCombination(store_board)
+            return []
+        res = []
         overf = 0
         for i in range(amount+1):
             cc = current_collection.copy()

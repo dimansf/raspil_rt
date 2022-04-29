@@ -1,51 +1,59 @@
-from raspil_rt.data_structs.store_boards import StoreBoard, NegativeSubtraction
+from raspil_rt.data_structs.storeBoards import StoreBoard, NegativeSubtraction
 from typing import Callable, ItemsView, Iterable, Tuple, List, List, Dict, Union
 
 
-class _Board:
-    def __init__(self, id, len, rem=0, remain_p=0, store_id=0):
+class Board:
+    def __init__(self, id, len, store_id=0 ,original=None):
         """
-        Обьектное представление доски
+            Обьектное представление доски.
+            Ее уникальность в комбинации айди длины и номер склада
+            оригинал - ссылка на оригинальные данные по которым можно найти
+            остальные данные по  доске
         """
         self.id = id
-        self.len = len
-        self.remain = rem
-        self.remain_p = remain_p
+        self.length = len
         self.store_id = store_id
+        self.original = original
+        
 
-    def __eq__(self, o: '_Board') -> bool:
+    def __eq__(self, o: 'Board') -> bool:
         return (self.id, self.len, self.store_id) == (o.id, o.len, o.store_id)
 
     def __hash__(self) -> int:
         return hash(str(self))
 
     def __str__(self) -> str:
-        return f' [{self.id}, {self.len}, {self.remain},{self.remain_p},{self.store_id}]'
+        return f' [{self.id}, {self.len},{self.store_id}] '
 
 
 class NegativeValue(Exception):
     pass
 
-
-class _BoardDict(Dict[_Board, int]):
-    def __init__(self, it: Iterable[Tuple[_Board, int]] = {}):
+b = Board()
+b2 = Board()
+if b == b2:
+    c = b+b2 # -> элемент стопки StackElement [b, number]
+    c += b  # -> StackElement + Board = StackElement
+    c += c # -> StackElement + StackElement = StackElement
+class BoardStack(Dict[Board, int]):
+    def __init__(self, it: Iterable[Tuple[Board, int]] = {}):
         super().__init__()
         self.update(it)
 
-    def __getitem__(self, k: _Board) -> int:
+    def __getitem__(self, k: Board) -> int:
         if k not in self:
             self[k] = 0
         return super().__getitem__(k)
 
-    def __setitem__(self, k: _Board, v: int) -> None:
+    def __setitem__(self, k: Board, v: int) -> None:
         if v < 0:
             raise NegativeValue
         return super().__setitem__(k, v)
-    def __isub__(self, other:'_BoardDict'):
+    def __isub__(self, other:'BoardDict'):
         for x in other.keys():
             self[x] -= other[x]
     def copy(self):
-        return _BoardDict(self)
+        return BoardDict(self)
 
     @property
     def length(self):
@@ -63,7 +71,7 @@ class _BoardDict(Dict[_Board, int]):
         for x in on_del:
             self.pop(x, None)
 
-    # def __eq__(self, o: '_Board') -> bool:
+    # def __eq__(self, o: 'Board') -> bool:
     #     return
 
     # def __hash__(self) -> int:
@@ -76,15 +84,34 @@ class _BoardDict(Dict[_Board, int]):
         s += '}'
 
 
-class _BoardCombination(List[_BoardDict]):
-    def __init__(self, brd: _Board) -> None:
+class DictCombinations(Dict[Board, List[BoardDict]]):
+    def __init__(self):
+        pass
+    def thin_out(self):
+        for board in self:
+            self._thin_outBoard(board, self[board])
+
+    def _thin_outBoard(self, board:Board, boards: List[BoardDict]):
+        best = boards.pop()
+        pl = round(best.length / board.len, 2)
+        while(len(boards)):
+            curr = boards.pop()
+            plc = round(curr.length / board.len, 2)
+            if plc > pl: 
+                pl = plc
+                best = curr
+        boards.append(best)
+
+
+class BoardCombination(List[BoardDict]):
+    def __init__(self, brd: Board) -> None:
         self.board = brd
 
     def thin_out(self):
 
         pass
 
-    def __eq__(self, o: '_BoardCombination') -> bool:
+    def __eq__(self, o: 'BoardCombination') -> bool:
         if self.board != o.board and len(self) != len(o):
             return False
         for x in self:
@@ -100,8 +127,8 @@ class _BoardCombination(List[_BoardDict]):
     #     pass
 
 
-class _MapCombinations(Dict[_BoardCombination, int]):
-    def __getitem__(self, k: _BoardCombination) -> int:
+class _MapCombinations(Dict[BoardCombination, int]):
+    def __getitem__(self, k: BoardCombination) -> int:
         if k not in self:
             self[k] = 0
         return super().__getitem__(k)
@@ -114,28 +141,28 @@ class _MapCombinations(Dict[_BoardCombination, int]):
 
 #     def __init__(self, sb: StoreBoard) -> None:
 #         super().__init__()
-#         self.store_board = sb
+#         self.storeBoard = sb
 #         self.payload = 0
 
 #     def calc_best_combination(self, use_condition=False, lmeasure=6000, width_saw=4, long_arr=[3, 4, 5]) -> 'BoardCombinations':
 #         '''
 #         Кэширует результат и выдает
 #         '''
-#         best_board = BoardCollection()
+#         bestBoard = BoardCollection()
 #         pl = 0
 #         for x in self:
 #             if use_condition:
 #                 fl = self._in_liquid_condition(
-#                     x, self.store_board, lmeasure, width_saw, long_arr)
+#                     x, self.storeBoard, lmeasure, width_saw, long_arr)
 #             else:
 #                 fl = True
-#             p = round(100 * (x.len/self.store_board.len))
-#             if fl and (p > pl or (p == pl and best_board.amount < x.amount)):
-#                 best_board = x
+#             p = round(100 * (x.len/self.storeBoard.len))
+#             if fl and (p > pl or (p == pl and bestBoard.amount < x.amount)):
+#                 bestBoard = x
 #                 pl = p
 
-#         b = BoardCombinations(self.store_board)
-#         b.append(best_board)
+#         b = BoardCombinations(self.storeBoard)
+#         b.append(bestBoard)
 #         b.payload = pl
 #         return b
 
@@ -149,7 +176,7 @@ class _MapCombinations(Dict[_BoardCombination, int]):
 #         return lower >= final_len or final_len >= sb.min_len
 
 #     def __eq__(self, o: 'BoardCombinations') -> bool:
-#         if self.store_board == o.store_board and \
+#         if self.storeBoard == o.storeBoard and \
 #                 self[0] == o[0] and \
 #                 self.payload == o.payload:
 #             return True
@@ -162,7 +189,7 @@ class _MapCombinations(Dict[_BoardCombination, int]):
 
 #     def __str__(self) -> str:
 #         s = 'Board Combinations: { \n'
-#         s += f'source is {self.store_board} \n'
+#         s += f'source is {self.storeBoard} \n'
 #         for x in self:
 #             s += f'\t{x}\n'
 #         return s + '\n \t}'
