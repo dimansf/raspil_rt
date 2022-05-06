@@ -1,44 +1,54 @@
-from raspil_rt.data_structs.StoreBoard import StoreBoard, StoreBoardCollection
+
+from itertools import count
 from typing import List, Dict, NamedTuple, Union
-from .data_structs.Board import Board, BoardCollection, BoardCombinations, MapResult
+from xml.dom.minidom import Element
+from cached_property import cached_property
+from raspil_rt.data_structs.board import Board, BoardStack, Cutsaw, ElementCutsaw, StackElement
 
 
 class Program:
-    def __init__(self, boards, store_boards, optimize=True, sclad_max=True, width_saw=4):
-        self.boards = BoardCollection([Board(*x) for x in boards])
-        self.store_boards = StoreBoardCollection(
-            [StoreBoard(*x) for x in store_boards])
+    def __init__(self: 'Program', boards: List[List[int]], store_boards: List[List[int]],
+                 optimize=True, sclad_max=True, width_saw=4):
+        self.src_boards = boards
+        self.src_store_boards = store_boards
+        self.boards = BoardStack(
+            [StackElement(Board(x[0], x[1], -1), x[3]) for x in boards])
+        self.store_boards = BoardStack(
+            [StackElement(Board(x[0], x[1], x[4]), x[3]) for x in store_boards])
         self.optimize = optimize
         self.sclad_max = sclad_max
         self.width_saw = width_saw
 
         self.ids = set([x.id for x in self.boards])
 
-        self.sclad_map = {
-            'longs': (3, 4, 5),
-            'shorts': (1, 2)
-        }
-        self.calc_map_longmeasures()
         self.map_result = MapResult()
+
+    @property
+    def longmeasures(self):
+        return (3, 4, 5)
+
+    @property
+    def shortsmeasures(self):
+        return (1, 2)
 
     def main(self):
         counter = 0
-        while(not self.iteration(self.sclad_map['shorts']
-                                 if self.sclad_max else self.sclad_map['longs'])):
-            if counter > 1000:
-                break
-            counter += 1
-        while(not self.iteration(self.sclad_map['shorts'] + self.sclad_map['longs'])):
-            if counter > 1000:
-                break
-            counter += 1
-        self.optimize = False
-        while(not self.iteration(self.sclad_map['shorts'] + self.sclad_map['longs'])):
-            if counter > 1000:
-                break
-            counter += 1
+        while(True):
+            counter = self.iteration(self.longmeasures
+                                     if self.sclad_max else self.longmeasures)
+            if counter > 0:
+                continue
 
-    def iteration(self, sclad_id=[]) -> bool:
+            self.iteration(self.shortsmeasures + self.longmeasures)
+            if counter > 0:
+                continue
+
+            self.optimize = False
+            counter = self.iteration(self.shortsmeasures + self.longmeasures)
+            if counter == 0:
+                break
+
+    def iteration(self, sclad_id=[]) -> int:
         map_r = self.calc_per_id(sclad_id)
         self.iteration_subtraction(map_r)
         self.map_result += map_r
@@ -50,13 +60,14 @@ class Program:
                 self.boards -= d[0]
                 self.store_boards -= StoreBoardCollection([d.store_board])
 
-    def calc_map_longmeasures(self):
+    @cached_property
+    def map_longmeasures(self):
         res = dict()
         #  процент нижней границы высчитывается из максимальной палки с 5 склада
         lngms = [x for x in self.store_boards if x.sclad_id == 5]
         for x in lngms:
             res[x.id] = x.len if res.get(x.id, 0) < x.len else res[x.id]
-        self.map_lmeasures = res
+        return res
 
     def optimize_selection(self, res: List[BoardCombinations]) -> Dict[BoardCombinations, int]:
         bests: List[BoardCombinations] = []
@@ -74,30 +85,29 @@ class Program:
                 best = bb
         return {best: 1}
 
-    def calc_per_id(self, sclad_ids=[]) -> MapResult:
-        results = MapResult()
+    def calculate_per_id(self, sclad_ids: List[int] = []) -> Cutsaw:
+        results = Cutsaw()
         for id in self.ids:
-            brds = BoardCollection(
+            boards = BoardStack(
                 [x for x in self.boards if x.id == id])
-            sbrds = StoreBoardCollection(
+            store_boards = BoardStack(
                 [x for x in self.store_boards if x.id == id and x.sclad_id in sclad_ids])
-
-            res = self.optimize_selection(
-                self.calc_per_boards(brds, sbrds))
+            # 1. просчитать потенциально возможные комбинации
+            res = self.calculate_per_boards(boards, store_boards)
+            # 2. отсеять неподходящие распилы
             if sum([len(x[0]) for x in res.keys()]) != 0:
                 results[id] = res  # type:ignore
 
         return results
 
-    def calc_per_boards(self, boards: BoardCollection, store_boards: StoreBoardCollection):
+    def calculate_per_boards(self, boards: BoardStack, store_boards: BoardStack):
         '''
-        Палка и ее возможный список распилов
+        Палки и их возможные комбинации распилов
         '''
-        res: List[BoardCombinations] = []
-        for bs in store_boards:
-            #  получены все комбинации по простому условию
-            res.append(self.form_combinations(
-                BoardCollection(), 0, boards, bs))
+        res = Cutsaw()
+        for board in store_boards:
+            el = self.combinate_boards(
+                board.board, boards)
         return res
 
     def can_to_saw(self, coll: BoardCollection, b: Board, i: int, bs: StoreBoard):
@@ -106,8 +116,7 @@ class Program:
             return True
         return False
 
-    def form_combinations(self, current_collection: BoardCollection,
-                          index: int, boards: BoardCollection, store_board: StoreBoard) -> BoardCombinations:
+    def combinate_boards(self, boards: BoardStack, store_board: Board, index: int,  current_collection: ElementCutsaw,) -> ElementCutsaw:
         '''
         Просчет комбинаций через рекурсивный перебор с условием на превышение длины summ(boards) < boards_len
         '''
@@ -116,7 +125,7 @@ class Program:
         except:
             return BoardCombinations(store_board)
 
-        a = BoardCombinations(store_board)
+        a = ElementCutsaw(store_board)
         for i in range(0, board.amount+1):
             if self.can_to_saw(current_collection, board, i, store_board):
                 cs = BoardCollection.copy(
@@ -128,3 +137,18 @@ class Program:
                 if len(res) != 0:
                     a += res
         return a
+
+    def combinate(self,  board:Board, other_boards:BoardStack,current_stack:BoardStack=BoardStack()):
+        iteration_board = other_boards.pop()
+        el_cutsaw = ElementCutsaw(board)
+
+        for i in range(iteration_board.amount):
+            if len(board) >= len(current_stack) + i * iteration_board.len:
+                good_stack = current_stack + StackElement(iteration_board, i)
+                el_cutsaw.append(good_stack)
+                el_custaw += self.combinate(board, other_boards, good_stack)
+
+        other_boards.append(iteration_board)
+
+
+        
