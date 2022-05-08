@@ -18,3 +18,8 @@
 # # a1.a == 0
 
 # a1 -=a2
+
+while(True):
+    print('4')
+    continue
+    print('5')

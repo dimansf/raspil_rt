@@ -1,5 +1,5 @@
 
-from itertools import count
+from ast import Index
 from typing import List, Dict, NamedTuple, Union
 from xml.dom.minidom import Element
 from cached_property import cached_property
@@ -7,7 +7,7 @@ from raspil_rt.data_structs.board import Board, BoardStack, Cutsaw, ElementCutsa
 
 
 class Program:
-    def __init__(self: 'Program', boards: List[List[int]], store_boards: List[List[int]],
+    def __init__(self: 'Program', boards: List[List[int]]=[], store_boards: List[List[int]]=[],
                  optimize=True, sclad_max=True, width_saw=4):
         self.src_boards = boards
         self.src_store_boards = store_boards
@@ -21,7 +21,7 @@ class Program:
 
         self.ids = set([x.id for x in self.boards])
 
-        self.map_result = MapResult()
+        self.map_result = []
 
     @property
     def longmeasures(self):
@@ -54,11 +54,11 @@ class Program:
         self.map_result += map_r
         return map_r.is_empty()
 
-    def iteration_subtraction(self, mr: MapResult):
+    def iteration_subtraction(self, mr ):
         for m in mr.values():
             for d in m.keys():
                 self.boards -= d[0]
-                self.store_boards -= StoreBoardCollection([d.store_board])
+                self.store_boards -= BoardStack([d.store_board])
 
     @cached_property
     def map_longmeasures(self):
@@ -69,8 +69,8 @@ class Program:
             res[x.id] = x.len if res.get(x.id, 0) < x.len else res[x.id]
         return res
 
-    def optimize_selection(self, res: List[BoardCombinations]) -> Dict[BoardCombinations, int]:
-        bests: List[BoardCombinations] = []
+    def optimize_selection(self, res) :
+        bests = []
         for bc in res:
             bests.append(bc.calc_best_combination(self.optimize,
                                                   self.map_lmeasures[bc.store_board.id],
@@ -110,45 +110,27 @@ class Program:
                 board.board, boards)
         return res
 
-    def can_to_saw(self, coll: BoardCollection, b: Board, i: int, bs: StoreBoard):
+    def can_to_saw(self, coll, b: Board, i: int, bs):
         ttl = coll.len + coll.amount * self.width_saw + b.len * i + i * self.width_saw
         if bs.len - ttl >= - self.width_saw:
             return True
         return False
 
-    def combinate_boards(self, boards: BoardStack, store_board: Board, index: int,  current_collection: ElementCutsaw,) -> ElementCutsaw:
-        '''
-        Просчет комбинаций через рекурсивный перебор с условием на превышение длины summ(boards) < boards_len
-        '''
+    
+
+    def combinate(self,  board: Board, other_boards: BoardStack, current_stack: BoardStack = BoardStack())-> ElementCutsaw:
         try:
-            board: Board = boards[index]
-        except:
-            return BoardCombinations(store_board)
+            iteration_board = other_boards.pop()
+        except IndexError:
+            return ElementCutsaw(board)
 
-        a = ElementCutsaw(store_board)
-        for i in range(0, board.amount+1):
-            if self.can_to_saw(current_collection, board, i, store_board):
-                cs = BoardCollection.copy(
-                    current_collection) if i != 0 else current_collection
-                if i != 0:
-                    cs.append(Board.copy(board, i))
-                    a.append(cs)
-                res = self.form_combinations(cs, index+1, boards, store_board)
-                if len(res) != 0:
-                    a += res
-        return a
-
-    def combinate(self,  board:Board, other_boards:BoardStack,current_stack:BoardStack=BoardStack()):
-        iteration_board = other_boards.pop()
         el_cutsaw = ElementCutsaw(board)
 
-        for i in range(iteration_board.amount):
+        for i in range(iteration_board.amount + 1):
             if len(board) >= len(current_stack) + i * iteration_board.len:
-                good_stack = current_stack + StackElement(iteration_board, i)
+                good_stack = current_stack + StackElement(iteration_board.board, i)
                 el_cutsaw.append(good_stack)
-                el_custaw += self.combinate(board, other_boards, good_stack)
+                el_cutsaw += self.combinate(board, other_boards, good_stack)
 
         other_boards.append(iteration_board)
-
-
-        
+        return el_cutsaw

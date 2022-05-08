@@ -7,7 +7,7 @@ class Board:
     Абстракция доски в распиле пришедшей в заказ
     '''
 
-    def __init__(self, id:int, len:int, amount:int) -> None:
+    def __init__(self, id:int, len:int, amount:int, *other) -> None:
         self.id = id
         self.len = len
         self.amount = amount
