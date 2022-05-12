@@ -1,3 +1,4 @@
+from typing import Any
 from raspil_rt.data_structs.board import *
 import unittest
 from copy import copy
@@ -63,8 +64,7 @@ class StackElementTests(unittest.TestCase):
         self.assertIsNot(se0, stack_element0)
 
     def test_addition(self):
-        se_sum = stack_element0 + stack_element1.board
-        self.assertEqual(se_sum.amount, stack_element0.amount + 1)
+   
         se_sum = stack_element0 + stack_element1
         self.assertEqual(se_sum.amount, stack_element0.amount + stack_element1.amount)
     
@@ -99,6 +99,22 @@ class BoardStackTests(unittest.TestCase):
 
     def test_eq(self):
        pass
+    
+    def test_wrap(self):
+        class A():
+            def print_helo(self, f:Any):
+                return f('hello')
+        class B:
+            name = 'B.class'
+            def build_hello(self):
+                def hello(s):
+                    return self.name + s
+                return hello
+
+        a = A()
+        b = B()
+        x = a.print_helo(b.build_hello())
+        print(X)
 
 class ElementCutsawTests(unittest.TestCase):
     def setUp(self):
