@@ -1,6 +1,5 @@
 from copy import copy
-from msilib.schema import Error
-from typing import Callable, Dict, Iterable, List, Tuple,  Union
+from typing import Dict, Iterable, List, Tuple,  Union
 
 
 class NegativeSubtraction(Exception):
@@ -110,10 +109,13 @@ class BoardStack(List[StackElement]):
     def __len__(self) -> int:
         return sum([len(x) for x in self])
 
-    def __sub__(self, other: 'BoardStack') -> 'BoardStack':
+    def __sub__(self, other: Union['BoardStack', Board]) -> 'BoardStack':
         other = copy(other)
-        for el in other:
-            el.amount = -el.amount
+        if isinstance(other, BoardStack):
+            for el in other:
+                el.amount = -el.amount
+        if isinstance(other, Board):
+            other = BoardStack([StackElement(other, -1)])
 
         return self + other
 
@@ -131,8 +133,8 @@ class BoardStack(List[StackElement]):
 
         if isinstance(other, BoardStack):
             [self.append(x) for x in other]
-        func: Callable[[StackElement], bool] = lambda x: x.amount > 0
-        res = list(filter(func, self))
+
+        res = list(filter(lambda x: x.amount > 0, self))
 
         self.clear()
         self.extend(res)
@@ -160,25 +162,28 @@ class ElementCutsaw(List[BoardStack]):
     boards_combinations - набор кучек досок
     """
 
-    def __init__(self: 'ElementCutsaw', board: Board, seq: Iterable[BoardStack] = []):
+    def __init__(self: 'ElementCutsaw', store_board: Board, seq: Iterable[BoardStack] = []):
         super().__init__()
-        self.board = board
+        self.store_board = store_board
         self.extend(seq)
+        self._kpd = 0.0
 
     def __copy__(self: 'ElementCutsaw'):
-        return ElementCutsaw(self.board, [copy(x) for x in self])
+        return ElementCutsaw(self.store_board, [copy(x) for x in self])
 
     def __eq__(self: 'ElementCutsaw', other: 'ElementCutsaw') -> bool:  # type:ignore
         try:
             return len(self) == len(other) and \
-                self.board == other.board and \
+                self.store_board == other.store_board and \
                 bool([self.index(x) for x in other]) or True
         except ValueError:
             return False
+
     @property
     def kpd(self):
         if len(self) > 1:
-            raise Exception('too many Elements in ElementCutsaw for kpd calculating')
+            raise Exception(
+                'too many Elements in ElementCutsaw for kpd calculating')
         return self._kpd
 
     def thick_off_stack_boards(self, optimize_map:  dict[int, bool], width_saw: int):
@@ -187,12 +192,17 @@ class ElementCutsaw(List[BoardStack]):
             лучший стак - он один и остается в массиве распилов
             Карта распилов: [ -1.0, 0.86 ... ] 
         """
+        if len(self) == 0:
+            return None
         kpds = [self._can_to_saw(
-            self.board, b_stack, width_saw, optimize_map[self.board.sclad_id]) for b_stack in self]
+            self.store_board, b_stack, width_saw, optimize_map[self.store_board.sclad_id]) for b_stack in self]
         best_stack = self[max(range(len(self)), key=kpds.__getitem__)]
         self._kpd = max(kpds)
         self.clear()
         self.append(best_stack)
+        if len(self) > 1:
+            raise Exception(
+                'after thick_off_stack_boards StackBoards must be only 1')
 
     def _can_to_saw(self, board: Board, stack: BoardStack, width_saw: int, optimize: bool):
         """
@@ -214,7 +224,7 @@ class ElementCutsaw(List[BoardStack]):
         return -1.0
 
     def __str__(self: 'ElementCutsaw') -> str:
-        s = '\n [' + f' {self.board}: '
+        s = '\n [' + f' {self.store_board}: '
         for el in self:
             s += f'{el}, '
         return s + ' ] '
@@ -222,7 +232,7 @@ class ElementCutsaw(List[BoardStack]):
 
 class Cutsaw(Dict[ElementCutsaw, int]):
     """
-       { board: [StackElement] : 1...n, 
+       { board: [BoardStack, ...] : 1...n, 
             .... }
     """
 
@@ -245,9 +255,26 @@ class Cutsaw(Dict[ElementCutsaw, int]):
         except KeyError:
             self.setdefault(other, amount)
 
-    def select_best_stack_board(self,  optimize_map:  dict[int, bool], width_saw: int):
-        [el.thick_off_stack_boards(optimize_map, width_saw) for el in self.keys()]
-        
+    def thick_off_cutsaw_elements(self,  optimize_map:  dict[int, bool], width_saw: int):
+        """
+            Из всех досок с их картами распилов выбираем лучшую по кпд и оставляем ее
+            остальные удаляем
+            Должен остаться один вариант доски с одним вариантом распила
+             {
+                 *kpd: 98.33
+                 [board: [BoardStack]] : 1
+             }
+        """
+        if len(self) == 0: return None
+
+        [el.thick_off_stack_boards(optimize_map, width_saw)
+         for el in self.keys()]
+
+        best_element = max(self.keys(), key=lambda x: x.kpd)
+        self.clear()
+        self[best_element] = 1
+        if len(self) > 1 or len(self.items()) > 1:
+            raise Exception('select_best_stack_board doesnt work correctly')
 
     def __copy__(self):
 

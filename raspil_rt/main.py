@@ -1,7 +1,6 @@
 
 from queue import Queue
 from typing import List, Dict
-from cached_property import cached_property
 from raspil_rt.data_structs.board import Board, BoardStack, Cutsaw, ElementCutsaw, StackElement
 
 
@@ -30,104 +29,71 @@ class Program:
         self.boards_by_id: Dict[int, BoardStack] = {}
         self.store_boards_by_id: Dict[int, BoardStack] = {}
 
-        self.map_result = []
-
+        self.resulted_cutsaw: Cutsaw = Cutsaw()
 
     def main(self):
+        remain_iterations = 10000
         while(not self.priority_map.empty()):
             stores = self.priority_map.get_nowait()
-            self.iteration(stores)
+            while(self.iteration(stores) != 0):
+                if remain_iterations < 0:
+                    raise Exception(
+                        'Exceeded remain iteration limit: Over 10k iterations')
+                else:
+                    remain_iterations -= 1
 
-        counter = 0
-        while(True):
-            counter = self.iteration(self.longmeasures
-                                     if self.sclad_max else self.longmeasures)
-            if counter > 0:
-                continue
-
-            self.iteration(self.shortsmeasures + self.longmeasures)
-            if counter > 0:
-                continue
-
-            self.optimize = False
-            counter = self.iteration(self.shortsmeasures + self.longmeasures)
-            if counter == 0:
-                break
-
-    def iteration(self, sclad_id: list[int] = []) -> int:
+    def iteration(self, sclad_id: list[int]) -> int:
         """
         возвращаем кол-во добавленых новых распилов
         при нулевом значении не удалось найти оптимальный распил
         """
-        # разбить на группы по ид
+        # разбить доски на группы по ид
         self._to_order_boards_by_id(sclad_id)
-
-        self.iteration_subtraction(map_r)
-        self.map_result += map_r
-        return map_r.is_empty()
+        sub_result = self.calculate_per_id()
+        for cut_element in sub_result:
+            self.store_boards -= cut_element.store_board
+            self.boards -= cut_element[0]
+        self.resulted_cutsaw += sub_result
+        return len(sub_result)
 
     def _to_order_boards_by_id(self, included_sclads: list[int] = []):
         ids = set([x.id for x in self.boards])
         for id in ids:
             self.boards_by_id[id] = BoardStack(
                 [x for x in self.boards if x.id == id])
-            self.store_boards_by_id[id] = BoardStack([x for x in self.store_boards if x.id ==
-                                                      id and x.sclad_id in included_sclads])
-
-    def iteration_subtraction(self, mr):
-        for m in mr.values():
-            for d in m.keys():
-                self.boards -= d[0]
-                self.store_boards -= BoardStack([d.store_board])
-
-    @cached_property
-    def map_longmeasures(self):
-        res = dict()
-        #  процент нижней границы высчитывается из максимальной палки с 5 склада
-        lngms = [x for x in self.store_boards if x.sclad_id == 5]
-        for x in lngms:
-            res[x.id] = x.len if res.get(x.id, 0) < x.len else res[x.id]
-        return res
-
-    def optimize_selection(self, res):
-        bests = []
-        for bc in res:
-            bests.append(bc.calc_best_combination(self.optimize,
-                                                  self.map_lmeasures[bc.store_board.id],
-                                                  self.width_saw,
-                                                  self.sclad_map['longs']))
-        try:
-            best = bests.pop()
-        except:
-            return {}
-        for bb in bests:
-            if best.payload < bb.payload:
-                best = bb
-        return {best: 1}
-    # на данном этапе должны выйти элементы распила с лучшей комбинацией
-    # [ ElementCutsaw.len == 1, ... ]
+            self.store_boards_by_id[id] = BoardStack(
+                [x for x in self.store_boards if x.id ==
+                 id and x.sclad_id in included_sclads])
 
     def calculate_per_id(self) -> Cutsaw:
-        results:list[Cutsaw] = []
+        """
+         На данном этапе получаем лучший Cutsaw по одной доске от каждого Id
+         {
+             [board_with_id1: [BoardStack]] : 1,
+             [board_with_id2: [BoardStack]] : 1,
+             ...
+         } 
+        """
+        results: Cutsaw = Cutsaw()
         for (board_id, boards) in self.boards_by_id.items():
 
             # 1. просчитать потенциально возможные комбинации
-            res = self.calculate_per_boards(
+            boards_cutsaw = self.calculate_per_boards(
                 boards, self.store_boards_by_id[board_id])
             # 2. отсеять неподходящие распилы
-            res.select_best_stack_board(self.optimize_map, self.width_saw)
-        
-        return results
-    
-        
-   
+            boards_cutsaw.thick_off_cutsaw_elements(
+                self.optimize_map, self.width_saw)
+            results += boards_cutsaw
 
-    def calculate_per_boards(self, boards: BoardStack, store_boards: BoardStack):
+        return results
+
+    def calculate_per_boards(self, boards: BoardStack, store_boards: BoardStack) -> Cutsaw:
         '''
-        Палки и их возможные комбинации распилов
+        Калькуляция палок и комбинаций под них
+        для каждой палки из store_board
         '''
         return Cutsaw([(self.combinate(
-                board.board, boards),1) for board in store_boards])
+            board.board, boards), 1) for board in store_boards])
 
     def combinate(self,  board: Board, other_boards: BoardStack, current_stack: BoardStack = BoardStack()) -> ElementCutsaw:
         try:
