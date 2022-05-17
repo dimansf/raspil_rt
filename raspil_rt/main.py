@@ -19,9 +19,9 @@ class Program:
         self.src_boards = boards
         self.src_store_boards = store_boards
         self.boards = BoardStack(
-            [StackElement(Board(x[0], x[1], -1), x[3]) for x in boards if x[3] > 0])
+            [StackElement(Board(*x), x[3]) for x in boards if x[3] > 0])
         self.store_boards = BoardStack(
-            [StackElement(Board(x[0], x[1], x[2]), x[3]) for x in store_boards if x[3] > 0])
+            [StackElement(Board(*x), x[3]) for x in store_boards if x[3] > 0])
         self.optimize_map = optimize_map
         self.priority_map = priority_map
         self.width_saw = width_saw

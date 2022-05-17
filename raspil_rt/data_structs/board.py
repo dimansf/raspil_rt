@@ -1,5 +1,5 @@
 from copy import copy
-from typing import Dict, Iterable, List, Tuple,  Union
+from typing import Any, Dict, Iterable, List, Tuple,  Union
 
 
 class NegativeSubtraction(Exception):
@@ -14,7 +14,7 @@ class Board:
         (id=1, len=1500, sclad_id=3)
     """
 
-    def __init__(self, id: int, len: int, sclad_id: int, min_remain: int = 0, max_remain: int = 0, *_) -> None:
+    def __init__(self, id: int, len: int, sclad_id: int, _: Any, min_remain: int = 0, max_remain: int = 0, *unused: Any) -> None:
         self.id = id
         self.len = len
         self.sclad_id = sclad_id
@@ -59,7 +59,11 @@ class StackElement:
         return self.board.sclad_id
 
     def __eq__(self, other: 'StackElement'):  # type:ignore
-        return self.board == other.board and self.amount == other.amount
+        return self.board == other.board
+        # and self.amount == other.amount
+
+    def identity(self, other: 'StackElement'):
+        return self == other and self.amount == other.amount
 
     def __str__(self) -> str:
         return (f'({self.board}: {self.amount})')
@@ -74,7 +78,7 @@ class StackElement:
     def __add__(self, other: 'StackElement') -> 'StackElement':
         self = copy(self)
 
-        if other.board == self.board:
+        if self == other:
             self.amount += other.amount
             if self.amount < 0:
                 raise Exception(
@@ -84,7 +88,7 @@ class StackElement:
         raise Exception('Failed to add two StackElements')
 
     def __sub__(self, other: 'StackElement') -> 'StackElement':
-        self = copy(other)
+        other = copy(other)
         other.amount = - other.amount
         return self + other
 
@@ -103,9 +107,6 @@ class BoardStack(List[StackElement]):
         self._kpd = 0
         self.extend(seq)
 
-    def boards_in_stack(self) -> int:
-        return sum([x.amount for x in self])
-
     def __len__(self) -> int:
         return sum([len(x) for x in self])
 
@@ -122,7 +123,7 @@ class BoardStack(List[StackElement]):
     def __eq__(self, other: 'BoardStack') -> bool:  # type:ignore
         try:
             return len(self) == len(other) and \
-                bool([self.index(x) for x in other]) or True
+                all([x.identity(self[self.index(x)])  for x in other])
         except ValueError:
             return False
 
@@ -162,20 +163,20 @@ class ElementCutsaw(List[BoardStack]):
     boards_combinations - набор кучек досок
     """
 
-    def __init__(self: 'ElementCutsaw', store_board: Board, seq: Iterable[BoardStack] = []):
+    def __init__(self, store_board: Board, seq: Iterable[BoardStack] = []):
         super().__init__()
         self.store_board = store_board
         self.extend(seq)
         self._kpd = 0.0
 
-    def __copy__(self: 'ElementCutsaw'):
+    def __copy__(self):
         return ElementCutsaw(self.store_board, [copy(x) for x in self])
 
-    def __eq__(self: 'ElementCutsaw', other: 'ElementCutsaw') -> bool:  # type:ignore
+    def __eq__(self, other: 'ElementCutsaw') -> bool:  # type:ignore
         try:
             return len(self) == len(other) and \
                 self.store_board == other.store_board and \
-                bool([self.index(x) for x in other]) or True
+                all([bool(self.index(x)+1) for x in other ])
         except ValueError:
             return False
 
@@ -190,7 +191,7 @@ class ElementCutsaw(List[BoardStack]):
         """
             Все комбинации проверяются на возможность распила и по карте кпд выбирается 
             лучший стак - он один и остается в массиве распилов
-            Карта распилов: [ -1.0, 0.86 ... ] 
+            Карта распилов: [ -1.0, 99.20 ... ] 
         """
         if len(self) == 0:
             return None
@@ -238,7 +239,8 @@ class Cutsaw(Dict[ElementCutsaw, int]):
 
     def __init__(self, seq: List[Tuple[ElementCutsaw, int]] = []):
         super().__init__()
-        pass
+        self.fromkeys(seq)
+        
 
     def __add__(self, other: Union['Cutsaw', ElementCutsaw]) -> 'Cutsaw':  # type:ignore
         self = copy(self)
@@ -265,7 +267,8 @@ class Cutsaw(Dict[ElementCutsaw, int]):
                  [board: [BoardStack]] : 1
              }
         """
-        if len(self) == 0: return None
+        if len(self) == 0:
+            return None
 
         [el.thick_off_stack_boards(optimize_map, width_saw)
          for el in self.keys()]
