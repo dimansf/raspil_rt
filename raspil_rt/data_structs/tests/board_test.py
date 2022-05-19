@@ -2,9 +2,13 @@
 
 from raspil_rt.data_structs.board import *
 import unittest
-from copy import copy
+from copy import copy, deepcopy
 
 # id len sclad amount min_per max_per
+
+
+
+
 boards = [
     [1, 100, 0, 5, 0, 0],
     [1, 200, 0, 10, 0, 0],
@@ -46,6 +50,7 @@ ec2 = ElementCutsaw(Board(*store_boards[2]), [BoardStack([se0, se1]), BoardStack
                                               BoardStack([se1])])
 
 cs = Cutsaw([(ec1, 1), (ec2,1)])
+pass
 
 class BoardTests(unittest.TestCase):
 
@@ -64,6 +69,7 @@ class BoardTests(unittest.TestCase):
         self.assertNotIn('object at', str(b1))
 
 
+
 class StackElementTests(unittest.TestCase):
     def setUp(self):
         pass
@@ -72,9 +78,9 @@ class StackElementTests(unittest.TestCase):
         pass
 
     def test_copy(self):
-
+        s_t = copy(se0)
         self.assertEqual(se0.identity(copy(se0)), True)
-        self.assertIsNot(se0, copy(se0))
+        self.assertIsNot(se0, s_t)
 
     def test_identity(self):
         se_0 = copy(se0)
@@ -114,7 +120,10 @@ class BoardStackTests(unittest.TestCase):
         pass
 
     def test___copy__(self):
-        self.assertEqual(bs1, copy(bs1))
+        els_t = copy(bs1)
+        els = zip(els_t, bs1)
+        for el in els:
+            self.assertIsNot(el[0], el[1])
 
     def test___len__(self):
         stack1 = BoardStack([se0, se1])
@@ -130,6 +139,11 @@ class BoardStackTests(unittest.TestCase):
 
     def test___add__(self):
         self.assertEqual(bs1 + bs1 - bs1, copy(bs1))
+        self.assertEqual(1, bs_1.element_count)
+    def test_sstr(self):
+        s= str(bs1)
+        self.assertNotIn('object at', s)
+    
 
 
 class ElementCutsawTests(unittest.TestCase):
@@ -140,8 +154,10 @@ class ElementCutsawTests(unittest.TestCase):
         pass
 
     def test___copy__(self):
-
-        self.assertIsNot(copy(ec1), ec1)
+        ec1_t = copy(ec1)
+        els = zip(ec1_t, ec1)
+        for el in els:
+            self.assertIsNot(el[0], el[1])
 
     def test___eq__(self):
         self.assertEqual(ec1, copy(ec1))
@@ -154,6 +170,13 @@ class ElementCutsawTests(unittest.TestCase):
     def test__can_to_saw(self):
         pass
 
+    def test_sstr(self):
+        s= str(ec1)
+        self.assertNotIn('object at', s)
+       
+
+
+
 
 class CutsawTests(unittest.TestCase):
     def setUp(self):
@@ -161,21 +184,29 @@ class CutsawTests(unittest.TestCase):
 
     def tearDown(self):
         pass
-
+    def test__iter(self):
+        pass
     def test___copy__(self):
         self.assertIsNot(copy(cs), cs)
 
     def test___eq__(self):
-        self.assertEqual(copy(cs), cs)
+        ccs = deepcopy(cs)
+        els = zip(ccs, cs)
+        for el in els:
+            if __debug__:
+                print(str(el[0]))
+                print(str(el[1]))
+            self.assertIsNot(el[0], el[1])
 
     def test_thick_off_cutsaw_elements(self):
         pass
     def test___add__(self):
-        css = cs + cs
+        css = cs + cs + cs
         self.assertTrue( True, all(x == 2 for x in css.values()))
     def test__can_to_saw(self):
         pass
 
 
 if __name__ == '__main__':
+    
     unittest.main()

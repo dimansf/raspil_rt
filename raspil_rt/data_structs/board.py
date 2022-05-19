@@ -1,5 +1,6 @@
 from copy import copy
-from typing import Any, Dict, Iterable, List, Tuple,  Union
+from typing import Any, Iterable, Iterator, List, Tuple,  Union
+from collections.abc import MutableMapping
 
 
 class NegativeSubtraction(Exception):
@@ -25,7 +26,7 @@ class Board:
         return self.len
 
     def __str__(self) -> str:
-        return f'"({self.id}, {self.len}, {self.sclad_id})"'
+        return f'({self.id}, {self.len}, {self.sclad_id})'
 
     def __eq__(self, other: 'Board') -> bool:  # type:ignore
         return (self.id, self.len, self.sclad_id) == \
@@ -93,7 +94,8 @@ class StackElement:
         return self + other
 
     def __copy__(self):
-        return StackElement(self.board, self.amount)
+        
+        return StackElement(self.board, int(self.amount))
 
 
 class BoardStack(List[StackElement]):
@@ -123,9 +125,13 @@ class BoardStack(List[StackElement]):
     def __eq__(self, other: 'BoardStack') -> bool:  # type:ignore
         try:
             return len(self) == len(other) and \
-                all([x.identity(self[self.index(x)])  for x in other])
+                all([x.identity(self[self.index(x)]) for x in other])
         except ValueError:
             return False
+
+    @property
+    def element_count(self):
+        return super().__len__()
 
     def __add__(self, other: Union[StackElement, 'BoardStack']):  # type:ignore
         self = copy(self)
@@ -147,10 +153,15 @@ class BoardStack(List[StackElement]):
         except ValueError:
             super().append(copy(stack_element))
 
+    def extend(self, __iterable: Iterable[StackElement]) -> None:
+        [self.append(x) for x in __iterable]
+
     def __str__(self) -> str:
+        sorted_stack = sorted(self, key=lambda el: hash(str(el)))
         s = '\n [ '
-        for el in self:
+        for el in sorted_stack[:-1]:
             s += f'{el}, '
+        s += f' {sorted_stack[-1]}'
         return s + '] '
 
     def __copy__(self):
@@ -176,7 +187,7 @@ class ElementCutsaw(List[BoardStack]):
         try:
             return len(self) == len(other) and \
                 self.store_board == other.store_board and \
-                all([bool(self.index(x)+1) for x in other ])
+                all([bool(self.index(x)+1) for x in other])
         except ValueError:
             return False
 
@@ -224,14 +235,23 @@ class ElementCutsaw(List[BoardStack]):
 
         return -1.0
 
+    @property
+    def _hash(self):
+        return hash(str(self))
+
+    def __hash__(self):  # type:ignore
+        return hash(str(self))
+
     def __str__(self: 'ElementCutsaw') -> str:
+        sorted_el = sorted(self, key=lambda el: hash(str(el)))
         s = '\n [' + f' {self.store_board}: '
-        for el in self:
+        for el in sorted_el[:-1]:
             s += f'{el}, '
+        s += f"{sorted_el[-1]}"
         return s + ' ] '
 
 
-class Cutsaw(Dict[ElementCutsaw, int]):
+class Cutsaw(MutableMapping[ElementCutsaw, int]):
     """
        { board: [BoardStack, ...] : 1...n, 
             .... }
@@ -239,23 +259,79 @@ class Cutsaw(Dict[ElementCutsaw, int]):
 
     def __init__(self, seq: List[Tuple[ElementCutsaw, int]] = []):
         super().__init__()
-        self.fromkeys(seq)
-        
+        self.els: List[Tuple[ElementCutsaw, int]] = []
+        self.update(seq)
+
+    def __copy__(self):
+
+        return Cutsaw([(copy(key), self[key]) for key in self])
 
     def __add__(self, other: Union['Cutsaw', ElementCutsaw]) -> 'Cutsaw':  # type:ignore
-        self = copy(self)
+        new = copy(self)
 
         if isinstance(other, ElementCutsaw):
-            self._sub_add__(other, 1)
+            new._sub_add__(other, 1)
         if isinstance(other, Cutsaw):
-            [self._sub_add__(x, y) for (x, y) in other.items()]
-        return self
+            if __debug__:
+                print('other ' + str(other))
+                print('new ' + str(new))
+                print('self ' + str(self))
+
+            [new._sub_add__(x, y) for (x, y) in other.items()]
+        return new
 
     def _sub_add__(self, other: ElementCutsaw, amount: int):
+        if __debug__:
+            print('sub add ' + str(self))
         try:
             self[other] += amount
         except KeyError:
             self.setdefault(other, amount)
+
+    def __getitem__(self, __k: ElementCutsaw) -> int:
+        hhash = hash(__k)
+        for el in self.els:
+            if hash(el[0]) == hhash:
+                return el[1]
+        raise KeyError
+
+    def __setitem__(self, __k: ElementCutsaw, __v: int) -> None:
+        hhash = hash(__k)
+        for el in self.els:
+            if hash(el[0]) == hhash:
+                self.els.remove(el)
+        self.els.append((__k, __v))
+
+    def __delitem__(self, __v: ElementCutsaw) -> None:
+        hhash = hash(__v)
+        for el in self.els:
+            if hash(el) == hhash:
+                return self.els.remove(el)
+        raise KeyError
+
+    def __iter__(self) -> Iterator[ElementCutsaw]:
+        s = self
+
+        class InnerIterator(Iterator[ElementCutsaw]):
+            x = -1
+
+            def __next__(self) -> ElementCutsaw:
+
+                self.x += 1
+                try:
+                    return s.els[self.x][0]
+                except:
+                    raise StopIteration
+
+            def __iter__(self):
+                return InnerIterator()
+
+        if __debug__:
+            print(str(s))
+        return InnerIterator()
+
+    def __len__(self) -> int:
+        return len(self.els)
 
     def thick_off_cutsaw_elements(self,  optimize_map:  dict[int, bool], width_saw: int):
         """
@@ -278,7 +354,3 @@ class Cutsaw(Dict[ElementCutsaw, int]):
         self[best_element] = 1
         if len(self) > 1 or len(self.items()) > 1:
             raise Exception('select_best_stack_board doesnt work correctly')
-
-    def __copy__(self):
-
-        return Cutsaw([(copy(var1), num) for (var1, num) in self.items()])
