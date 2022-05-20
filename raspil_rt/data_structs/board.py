@@ -305,7 +305,7 @@ class Cutsaw(MutableMapping[ElementCutsaw, int]):
     def __delitem__(self, __v: ElementCutsaw) -> None:
         hhash = hash(__v)
         for el in self.els:
-            if hash(el) == hhash:
+            if hash(el[0]) == hhash:
                 return self.els.remove(el)
         raise KeyError
 

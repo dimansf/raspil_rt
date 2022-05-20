@@ -199,7 +199,8 @@ class CutsawTests(unittest.TestCase):
             self.assertIsNot(el[0], el[1])
 
     def test_thick_off_cutsaw_elements(self):
-        pass
+        css = copy(cs)
+        css.thick_off_cutsaw_elements({1:True, 2:True, 3:True, 4:True, 5:False}, 4)
     def test___add__(self):
         css = cs + cs + cs
         self.assertTrue( True, all(x == 2 for x in css.values()))

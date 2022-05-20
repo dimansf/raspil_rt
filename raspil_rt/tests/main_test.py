@@ -1,6 +1,6 @@
-import os
+# import os
 from raspil_rt.data_structs.board import Board, BoardStack, StackElement
-from raspil_rt.main import Program
+# from raspil_rt.main import Program
 
 import unittest
 
@@ -34,7 +34,7 @@ class MainTests(unittest.TestCase):
     def test_main(self):
         pass
 
-    def test_combinate(self):
-        program = Program()
-        res = Program.combinate(program, self.board, self.other_boards)
-        open(os.path.dirname(__file__)+'/stdout.json', 'w').write(str(res))
+    # def test_combinate(self):
+    #     program = Program()
+    #     res = Program.combinate(program, self.board, self.other_boards)
+    #     open(os.path.dirname(__file__)+'/stdout.json', 'w').write(str(res))
