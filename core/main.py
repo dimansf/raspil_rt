@@ -1,7 +1,7 @@
 
 from queue import Queue
 from typing import List, Dict
-from raspil_rt.data_structs.board import Board, BoardStack, Cutsaw, ElementCutsaw, StackElement
+from core.data_structs.board import Board, BoardStack, Cutsaw, ElementCutsaw, StackElement
 
 
 class Program:

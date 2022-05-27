@@ -1,6 +1,6 @@
 
 
-from raspil_rt.data_structs.board import *
+from core.data_structs.board import *
 import unittest
 from copy import copy, deepcopy
 

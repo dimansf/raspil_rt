@@ -1,5 +1,5 @@
 # import os
-from raspil_rt.data_structs.board import Board, BoardStack, StackElement
+from core.data_structs.board import Board, BoardStack, StackElement
 # from raspil_rt.main import Program
 
 import unittest
