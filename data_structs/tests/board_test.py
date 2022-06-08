@@ -1,6 +1,6 @@
 
 
-from core.data_structs.board import *
+from data_structs.board import *
 import unittest
 from copy import copy, deepcopy
 
