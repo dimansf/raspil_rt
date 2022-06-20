@@ -3,8 +3,6 @@ from copy import copy
 from typing import Any, Iterable, Iterator, List, Tuple,  Union
 from collections.abc import MutableMapping
 
-# from convertation import TimeCounter
-# tc:TimeCounter = TimeCounter(r'C:\Users\dimansf\Documents\coding\raspil_rt\tests\out_board.json')
 
 
 class NegativeSubtraction(Exception):
@@ -124,18 +122,18 @@ class BoardStack(List[StackElement]):
         ''' количество стопок в стаке'''
         return super().__len__()
     def __eq__(self, other: 'BoardStack') -> bool:  # type:ignore
-        # tc.print( json.dumps(tc))
+        
         try:
-            #tc.mark('ElementCutsaw.__eq__')
+            
             self.sort(key=lambda el: hash(el))
             other.sort(key=lambda el: hash(el))
 
             res =   self.length == other.length and \
                 all([self[x] == other[x] for x in range(self.length)])
-            #tc.mark('ElementCutsaw.__eq__')
+            
             return res
         except ValueError:
-            #tc.mark('ElementCutsaw.__eq__')
+            
             return False
 
     def __hash__(self) -> int:  # type:ignore
@@ -252,10 +250,10 @@ class ElementCutsaw(List[BoardStack]):
             raise Exception(
                 'after thick_off_stack_boards StackBoards must be only 0-1')
     def __iadd__(self, __x: 'ElementCutsaw') -> 'ElementCutsaw':  # type:ignore
-        #tc.mark('ElementCutsaw__iadd__ ', 'sum')
+        
         super().__iadd__(__x)
-        #tc.mark('ElementCutsaw__iadd__ ', 'sum')
-        # tc.print( json.dumps(tc))
+        
+       
         return self
 
     def _kpd_to_saw(self, board: Board, stack: BoardStack, width_saw: int, optimize: bool):

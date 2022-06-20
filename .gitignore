@@ -5,3 +5,8 @@
 
 /test2/
 */tests/stdout.json
+tests/resources/input.json
+tests/out.json
+tests/out1.json
+tests/out_board.json
+data_structs/tests/cutsaw.json
