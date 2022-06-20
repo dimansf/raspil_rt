@@ -1,8 +1,8 @@
-
+from os import path
 
 from data_structs.board import *
 import unittest
-from copy import copy, deepcopy
+from copy import copy
 
 # id len sclad amount min_per max_per
 
@@ -79,13 +79,13 @@ class StackElementTests(unittest.TestCase):
 
     def test_copy(self):
         s_t = copy(se0)
-        self.assertEqual(se0.identity(copy(se0)), True)
+        self.assertEqual(str(se0) == str(se0), True)
         self.assertIsNot(se0, s_t)
 
     def test_identity(self):
         se_0 = copy(se0)
         se_0.amount += 1
-        self.assertEqual(se_0.identity(se0), False)
+        self.assertEqual(str(se_0)== str(se0), False)
         self.assertEqual(se0, se_0)
 
     def test___add__(self):
@@ -131,7 +131,7 @@ class BoardStackTests(unittest.TestCase):
 
     def test___sub__(self):
         self.assertEqual(len(bs1 - bs1), 0)
-        self.assertEqual(len(bs1 - b0), len(se1)+len(se0) - len(b0))
+        self.assertEqual(len(bs1 - StackElement(b1, 1)), len(se1)+len(se0) - len(b1))
 
     def test_eq(self):
         self.assertEqual(bs1, copy(bs1))
@@ -190,7 +190,7 @@ class CutsawTests(unittest.TestCase):
         self.assertIsNot(copy(cs), cs)
 
     def test___eq__(self):
-        ccs = deepcopy(cs)
+        ccs = copy(cs)
         els = zip(ccs, cs)
         for el in els:
             if __debug__:
@@ -206,6 +206,11 @@ class CutsawTests(unittest.TestCase):
         self.assertTrue( True, all(x == 2 for x in css.values()))
     def test__can_to_saw(self):
         pass
+    def test_toJSON(self):
+        with open(path.join(path.dirname(__file__), 'cutsaw.json'), 'w') as f:
+            css = cs+cs
+            f.write(str(css))
+            # f.write(str(css))
 
 
 if __name__ == '__main__':

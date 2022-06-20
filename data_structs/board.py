@@ -1,6 +1,10 @@
 from copy import copy
+# import json
 from typing import Any, Iterable, Iterator, List, Tuple,  Union
 from collections.abc import MutableMapping
+
+# from convertation import TimeCounter
+# tc:TimeCounter = TimeCounter(r'C:\Users\dimansf\Documents\coding\raspil_rt\tests\out_board.json')
 
 
 class NegativeSubtraction(Exception):
@@ -10,7 +14,7 @@ class NegativeSubtraction(Exception):
     pass
 
 
-class Board:
+class Board():
     """
         (id=1, len=1500, sclad_id=3)
     """
@@ -26,18 +30,24 @@ class Board:
         return self.len
 
     def __str__(self) -> str:
-        return f'({self.id}, {self.len}, {self.sclad_id})'
+        return f'[{self.id}, {self.len}, {self.sclad_id}]'
 
     def __eq__(self, other: 'Board') -> bool:  # type:ignore
         return (self.id, self.len, self.sclad_id) == \
             (other.id, other.len,  other.sclad_id)
 
+    def __hash__(self) -> int:
+        return hash(str(self))
 
-class StackElement:
+
+class StackElement():
     """
         одна стопка - доска и ее количество 
         (id=1, len=1500, sclad_id=3): 10 
     """
+
+    def __hash__(self) -> int:
+        return hash(str(self))
 
     def __init__(self, board: Board, amount: int):
         self.board = board
@@ -63,11 +73,8 @@ class StackElement:
         return self.board == other.board
         # and self.amount == other.amount
 
-    def identity(self, other: 'StackElement'):
-        return self == other and self.amount == other.amount
-
     def __str__(self) -> str:
-        return (f'({self.board}: {self.amount})')
+        return ('{'+f'{self.board}: {self.amount}'+'}')
 
     def __len__(self):
         """
@@ -83,7 +90,7 @@ class StackElement:
             self.amount += other.amount
             if self.amount < 0:
                 raise Exception(
-                    'Failed to add two StackElements self.amount < 0')
+                    'Failed to add/subtract two StackElements self.amount < 0')
             return self
 
         raise Exception('Failed to add two StackElements')
@@ -94,7 +101,7 @@ class StackElement:
         return self + other
 
     def __copy__(self):
-        
+
         return StackElement(self.board, int(self.amount))
 
 
@@ -104,34 +111,49 @@ class BoardStack(List[StackElement]):
         [(id=1, len=1500, sclad_id=3):10, ...]
     """
 
-    def __init__(self, seq: List[StackElement] = []):
+    def __init__(self, seq: List[StackElement] = [], kpd: float = 0.0):
         super().__init__()
-        self._kpd = 0
+        self.kpd = kpd
         self.extend(seq)
 
     def __len__(self) -> int:
         return sum([len(x) for x in self])
-
-    def __sub__(self, other: Union['BoardStack', Board]) -> 'BoardStack':
-        other = copy(other)
-        if isinstance(other, BoardStack):
-            for el in other:
-                el.amount = -el.amount
-        if isinstance(other, Board):
-            other = BoardStack([StackElement(other, -1)])
-
-        return self + other
-
+    
+    @property
+    def length(self):
+        ''' количество стопок в стаке'''
+        return super().__len__()
     def __eq__(self, other: 'BoardStack') -> bool:  # type:ignore
+        # tc.print( json.dumps(tc))
         try:
-            return len(self) == len(other) and \
-                all([x.identity(self[self.index(x)]) for x in other])
+            #tc.mark('ElementCutsaw.__eq__')
+            self.sort(key=lambda el: hash(el))
+            other.sort(key=lambda el: hash(el))
+
+            res =   self.length == other.length and \
+                all([self[x] == other[x] for x in range(self.length)])
+            #tc.mark('ElementCutsaw.__eq__')
+            return res
         except ValueError:
+            #tc.mark('ElementCutsaw.__eq__')
             return False
+
+    def __hash__(self) -> int:  # type:ignore
+        return hash(str(self))
 
     @property
     def element_count(self):
         return super().__len__()
+
+    def __sub__(self, other: Union['BoardStack', StackElement]) -> 'BoardStack':
+        other = copy(other)
+        if isinstance(other, BoardStack):
+            for el in other:
+                el.amount = -el.amount
+        if isinstance(other, StackElement):
+            other.amount = -other.amount
+
+        return self + other
 
     def __add__(self, other: Union[StackElement, 'BoardStack']):  # type:ignore
         self = copy(self)
@@ -141,6 +163,10 @@ class BoardStack(List[StackElement]):
         if isinstance(other, BoardStack):
             [self.append(x) for x in other]
 
+        if any([x.amount < 0 for x in self]):
+            raise Exception(
+                'Incorrect behavior BoardStack.__add__ amount of Stackelement lower than 0')
+
         res = list(filter(lambda x: x.amount > 0, self))
 
         self.clear()
@@ -148,24 +174,28 @@ class BoardStack(List[StackElement]):
         return self
 
     def append(self, stack_element: StackElement) -> None:
-        try:
+        if stack_element.amount == 0:
+            return 
+        # + addition
+        if stack_element.amount > 0:
+            try:
+                self[self.index(stack_element)] += stack_element
+            except ValueError:
+                super().append(copy(stack_element))
+        # - subtraction
+        else:
             self[self.index(stack_element)] += stack_element
-        except ValueError:
-            super().append(copy(stack_element))
 
     def extend(self, __iterable: Iterable[StackElement]) -> None:
         [self.append(x) for x in __iterable]
 
     def __str__(self) -> str:
-        sorted_stack = sorted(self, key=lambda el: hash(str(el)))
-        s = '\n [ '
-        for el in sorted_stack[:-1]:
-            s += f'{el}, '
-        s += f' {sorted_stack[-1]}'
-        return s + '] '
+        self.sort(key=lambda el: hash(el))
+
+        return '\n [ ' + ','.join([str(el) for el in self]) + '] '
 
     def __copy__(self):
-        return BoardStack([copy(x) for x in self])
+        return BoardStack([copy(x) for x in self], self.kpd)
 
 
 class ElementCutsaw(List[BoardStack]):
@@ -173,30 +203,34 @@ class ElementCutsaw(List[BoardStack]):
     board - доска
     boards_combinations - набор кучек досок
     """
-
+    
     def __init__(self, store_board: Board, seq: Iterable[BoardStack] = []):
         super().__init__()
         self.store_board = store_board
         self.extend(seq)
-        self._kpd = 0.0
 
     def __copy__(self):
         return ElementCutsaw(self.store_board, [copy(x) for x in self])
 
     def __eq__(self, other: 'ElementCutsaw') -> bool:  # type:ignore
+        
         try:
-            return len(self) == len(other) and \
+            res = len(self) == len(other) and \
                 self.store_board == other.store_board and \
                 all([bool(self.index(x)+1) for x in other])
+            return res
         except ValueError:
             return False
+
+    def __hash__(self) -> int:  # type:ignore
+        return hash(str(self))
 
     @property
     def kpd(self):
         if len(self) > 1:
             raise Exception(
                 'too many Elements in ElementCutsaw for kpd calculating')
-        return self._kpd
+        return -1.0 if next(iter(self), 0) is 0 else self[0].kpd
 
     def thick_off_stack_boards(self, optimize_map:  dict[int, bool], width_saw: int):
         """
@@ -206,49 +240,61 @@ class ElementCutsaw(List[BoardStack]):
         """
         if len(self) == 0:
             return None
-        kpds = [self._can_to_saw(
-            self.store_board, b_stack, width_saw, optimize_map[self.store_board.sclad_id]) for b_stack in self]
+        [self._kpd_to_saw(
+            self.store_board, b_stack, width_saw, optimize_map[self.store_board.sclad_id])
+            for b_stack in self]
+        kpds = [x.kpd for x in self]
         best_stack = self[max(range(len(self)), key=kpds.__getitem__)]
-        self._kpd = max(kpds)
+
         self.clear()
-        self.append(best_stack)
+        self.append(best_stack) if best_stack.kpd > 0 else None
         if len(self) > 1:
             raise Exception(
-                'after thick_off_stack_boards StackBoards must be only 1')
+                'after thick_off_stack_boards StackBoards must be only 0-1')
+    def __iadd__(self, __x: 'ElementCutsaw') -> 'ElementCutsaw':  # type:ignore
+        #tc.mark('ElementCutsaw__iadd__ ', 'sum')
+        super().__iadd__(__x)
+        #tc.mark('ElementCutsaw__iadd__ ', 'sum')
+        # tc.print( json.dumps(tc))
+        return self
 
-    def _can_to_saw(self, board: Board, stack: BoardStack, width_saw: int, optimize: bool):
+    def _kpd_to_saw(self, board: Board, stack: BoardStack, width_saw: int, optimize: bool):
         """
             Возвращается кпд данного распила для этой доски 
             -1.0 если невозможно распилить по этой схеме
         """
+        stack_amount = sum([x.amount for x in stack])
+        if stack_amount <= 0: 
+            stack.kpd =  -1.0 
+            return
+
         remain = len(board) - (width_saw *
-                               (sum([x.amount for x in stack]) - 1) + len(stack))
+                               (stack_amount - 1) + len(stack))
+        if remain < 0:
+            stack.kpd = -1.0
+            return
         kpd_percentage = round((len(board) - remain) / (len(board)/100), 2)
         # 1. условие на возможность физически распилить длинномер на такие отрезки
-        if remain >= 0:
-            if optimize is False:
-                return kpd_percentage
+        if kpd_percentage < 0:
+            stack.kpd = -1.0
+            return
+        if optimize is False:
+            stack.kpd = kpd_percentage
+        else:
+            if board.min_remain >= remain or \
+                    board.max_remain <= remain:
+                stack.kpd = kpd_percentage
             else:
-                if board.min_remain >= remain or \
-                        board.max_remain <= remain:
-                    return kpd_percentage
-
-        return -1.0
+                stack.kpd = -1.0
 
     @property
     def _hash(self):
         return hash(str(self))
 
-    def __hash__(self):  # type:ignore
-        return hash(str(self))
-
     def __str__(self: 'ElementCutsaw') -> str:
-        sorted_el = sorted(self, key=lambda el: hash(str(el)))
-        s = '\n [' + f' {self.store_board}: '
-        for el in sorted_el[:-1]:
-            s += f'{el}, '
-        s += f"{sorted_el[-1]}"
-        return s + ' ] '
+        sorted_el = sorted(self, key=lambda el: hash(el))
+        return '\n {' + f' {self.store_board}: [' \
+            + ','.join([str(el) for el in sorted_el]) + ']}'
 
 
 class Cutsaw(MutableMapping[ElementCutsaw, int]):
@@ -261,6 +307,9 @@ class Cutsaw(MutableMapping[ElementCutsaw, int]):
         super().__init__()
         self.els: List[Tuple[ElementCutsaw, int]] = []
         self.update(seq)
+
+    def __hash__(self) -> int:  # type:ignore
+        return hash(str(self))
 
     def __copy__(self):
 
@@ -275,7 +324,7 @@ class Cutsaw(MutableMapping[ElementCutsaw, int]):
             if __debug__:
                 print('other ' + str(other))
                 print('new ' + str(new))
-                print('self ' + str(self))
+                
 
             [new._sub_add__(x, y) for (x, y) in other.items()]
         return new
@@ -326,12 +375,15 @@ class Cutsaw(MutableMapping[ElementCutsaw, int]):
             def __iter__(self):
                 return InnerIterator()
 
-        if __debug__:
-            print(str(s))
+        # if __debug__:
+        #     print(str(s))
         return InnerIterator()
 
     def __len__(self) -> int:
         return len(self.els)
+
+    def __str__(self):
+        return '{' + ','.join([f'{x}: {self[x]}' for x in self]) + '}'
 
     def thick_off_cutsaw_elements(self,  optimize_map:  dict[int, bool], width_saw: int):
         """
@@ -350,7 +402,8 @@ class Cutsaw(MutableMapping[ElementCutsaw, int]):
          for el in self.keys()]
 
         best_element = max(self.keys(), key=lambda x: x.kpd)
+
         self.clear()
-        self[best_element] = 1
+        self.setdefault(best_element, 1) if best_element.kpd > 0 else None
         if len(self) > 1 or len(self.items()) > 1:
             raise Exception('select_best_stack_board doesnt work correctly')
