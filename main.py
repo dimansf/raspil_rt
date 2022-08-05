@@ -1,7 +1,15 @@
 
+from inspect import stack
 from typing import List, Dict
 # from convertation import TimeCounter
 from data_structs.board import Board, BoardStack, Cutsaw, ElementCutsaw, StackElement
+
+
+class LongTimeEvaluationError(Exception):
+    '''
+    'Negative amount of Boards'
+    '''
+    pass
 
 
 class Program:
@@ -24,47 +32,13 @@ class Program:
             [StackElement(Board(*x), x[3]) for x in store_boards if x[3] > 0])
         self.optimize_map = optimize_map
         self.priority_map = priority_map[::-1]
-        
+
         self.width_saw = width_saw
-        
+
         self.boards_by_id: Dict[int, BoardStack] = {}
         self.store_boards_by_id: Dict[int, BoardStack] = {}
 
         self.resulted_cutsaw: Cutsaw = Cutsaw()
-
-    def main(self):
-        remain_iterations = 10000
-        
-        while( len(self.priority_map)):
-            
-            stores = self.priority_map.pop()
-            while(self.iteration(stores) != 0):
-                if remain_iterations < 0:
-                    raise Exception(
-                        'Exceeded remain iteration limit: Over 10k iterations')
-                else:
-                    remain_iterations -= 1
-            
-                
-
-    def iteration(self, sclad_id: list[int]) -> int:
-        """
-        возвращаем кол-во добавленых новых распилов
-        при нулевом значении не удалось найти оптимальный распил
-        """
-        # разбить доски на группы по ид
-        
-        self._to_order_boards_by_id(sclad_id)
-        
-        
-        sub_result = self.calculate_per_id()
-        
-        for cut_element in sub_result:
-            self.store_boards -= StackElement(cut_element.store_board, 1)
-            self.boards -= cut_element[0]
-            
-        self.resulted_cutsaw += sub_result
-        return len(sub_result)
 
     def _to_order_boards_by_id(self, included_sclads: list[int] = []):
         self.boards_by_id.clear()
@@ -77,29 +51,71 @@ class Program:
                 [x for x in self.store_boards if x.id ==
                  id and x.sclad_id in included_sclads])
 
+    def main(self):
+        
+        for stores in self.priority_map:
+            self.iteration(stores)
+        
+
+
+    def iteration(self, sclad_id: list[int]):
+        """
+        итерация по складу
+        """
+        
+        # разбить доски на группы по ид
+        self._to_order_boards_by_id(sclad_id)
+
+        self.cutsaw_map = self.calculate_per_id()
+        
+        
+        remain_iterations = 100
+        while(True):
+            remain_iterations -= 1
+            sub_iteration = self._sub_iteration()
+            self.resulted_cutsaw += sub_iteration
+            if not len(sub_iteration):
+                break
+            self._to_order_boards_by_id(sclad_id)
+            if remain_iterations < 0:
+                    raise LongTimeEvaluationError()
+        return
+
+    def _sub_iteration(self):
+        stacks = Cutsaw()
+
+        for id in self.store_boards_by_id:
+            res = self.cutsaw_map.select_good_element_cutsaw(
+                self.store_boards_by_id[id], self.boards_by_id[id])
+            stacks.setdefault(res, 1) if res else 0
+
+        for cut_element in stacks:
+            self.store_boards -= StackElement(cut_element.store_board, 1)
+            self.boards -= cut_element[0]
+
+        return stacks
+
     def calculate_per_id(self) -> Cutsaw:
         """
-         На данном этапе получаем лучший Cutsaw по одной доске от каждого Id
-         {
-             [board_with_id1: [BoardStack]] : 1,
-             [board_with_id2: [BoardStack]] : 1,
+         На данном этапе получаем  Cutsaw отсортированные по кпд от каждого Id
+         {                     100%, ... -> 1%
+             [board_with_id1: [BoardStack], ...] : 1,
+             [board_with_id2: [BoardStack], ...] : 1,
              ...
          } 
         """
         results: Cutsaw = Cutsaw()
         for (board_id, boards) in self.boards_by_id.items():
 
-            
             # 1. просчитать потенциально возможные комбинации
             boards_cutsaw = self.calculate_per_boards(
                 boards, self.store_boards_by_id[board_id])
-            
+
             # 2. отсеять неподходящие распилы
+            boards_cutsaw.select_and_order_cutsaw_elements(
+            self.optimize_map, self.width_saw)
             
-            boards_cutsaw.thick_off_cutsaw_elements(
-                self.optimize_map, self.width_saw)
             results += boards_cutsaw
-            
 
         return results
 
@@ -108,14 +124,13 @@ class Program:
         Калькуляция палок и комбинаций под них
         для каждой палки из store_board
         '''
-        
         res = Cutsaw([(self.combinate(
             board.board, boards), 1) for board in store_boards])
-        
+
         return res
 
-    def combinate(self,  board: Board, other_boards: BoardStack, 
-        current_stack: BoardStack = BoardStack()) -> ElementCutsaw:
+    def combinate(self,  board: Board, other_boards: BoardStack,
+                  current_stack: BoardStack = BoardStack()) -> ElementCutsaw:
         try:
             iteration_board = other_boards.pop()
         except IndexError:
@@ -124,15 +139,12 @@ class Program:
         el_cutsaw = ElementCutsaw(board)
 
         for i in range(iteration_board.amount + 1):
-            if len(board) >= len(current_stack) + i * iteration_board.len:
-                
-                
+            if len(board) >= current_stack.length + i * iteration_board.len:
+
                 good_stack = current_stack + \
                     StackElement(iteration_board.board, i)
                 el_cutsaw.append(good_stack)
-                
-                
-                
+
                 el_cutsaw += self.combinate(board, other_boards, good_stack)
 
         other_boards.append(iteration_board)
