@@ -48,9 +48,6 @@ ec2 = ElementCutsaw(Board(*store_boards[2]), [BoardStack([se0, se1]), BoardStack
                                               BoardStack([se1])])
 
 
-
-
-
 class BoardTests(unittest.TestCase):
 
     def setUp(self):
@@ -134,20 +131,24 @@ class BoardStackTests(unittest.TestCase):
         pass
 
     def test___contains__(self):
-        self.assertTrue(bs1 in bs1)
+        self.assertTrue(bs1[0] in bs1)
         bst = bs1 - bs1[0]
-        self.assertTrue(bst in bs1)
-        self.assertFalse(bs1 in bst)
-        
+        self.assertTrue(bs1 in bst)
+        self.assertTrue(bs1 not in bst)
 
     def test___sub__(self):
         self.assertEqual(len(bs1 - bs1), 0)
-        self.assertEqual(len(bs1 - StackElement(b1, 1)),
-                         len(se1)+len(se0) - len(b1))
+        self.assertEqual(len(BoardStack([StackElement(b1, 2)]) 
+        - StackElement(b1, 1)), 1)
 
     def test___add__(self):
-        self.assertEqual(bs1 + bs1 - bs1, copy(bs1))
-        self.assertEqual(1, bs_1.amount)
+        # pass
+        c1 = BoardStack([StackElement(b0, 5), StackElement(b1, 1)])
+        c2 = BoardStack([StackElement(b0, 10), StackElement(b1, 2)])
+        c3 = c1+c2
+        self.assertEqual(len(c3), 2)
+        self.assertEqual(c3.amount, 18)
+        
 
     def test_append(self):
         bst = copy(bs1)
@@ -182,6 +183,7 @@ class ElementCutsawTests(unittest.TestCase):
         els = zip(ec1_t, ec1)
         for el in els:
             self.assertIsNot(el[0], el[1])
+
     def test_length(self):
         pass
 
@@ -190,38 +192,35 @@ class ElementCutsawTests(unittest.TestCase):
 
     def test___hash__(self):
         pass
+
     def test_select_best_stack_board(self):
         pass
+
     def test_calc_kpd_and_order_stack_boards(self):
         pass
+
     def test_calculate_kpd(self):
         pass
+
     def test___str__(self):
         s = str(ec1)
         self.assertNotIn('object at', s)
-    
-
-
-
-
-
-        
 
 
 class CutsawTests(unittest.TestCase):
     def setUp(self):
         self.cs = Cutsaw([(ec1, 1), (ec2, 1)])
-       
 
     def tearDown(self):
         pass
 
     def test__iter(self):
-        
+
         pass
+
     def test___iter__(self):
         k = next(iter(self.cs))
-        self.assertTrue( k)
+        self.assertTrue(k)
 
     def test___copy__(self):
         self.assertIsNot(copy(self.cs), self.cs)
@@ -232,7 +231,6 @@ class CutsawTests(unittest.TestCase):
         for el in els:
             self.assertIsNot(el[0], el[1])
             self.assertTrue(el[0] == el[1])
-    
 
     def test___add__(self):
         css = self.cs + self.cs + self.cs

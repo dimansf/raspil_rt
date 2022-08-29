@@ -75,8 +75,8 @@ class StackElement():
         return self.board.sclad_id
 
     def __eq__(self, other: 'StackElement'):  # type:ignore
-        return self.board == other.board \
-            and self.amount == other.amount
+        return self.board == other.board #\
+            # and self.amount == other.amount
 
     def __str__(self) -> str:
         return ('{'+f'{self.board}: {self.amount}'+'}')
@@ -152,14 +152,17 @@ class BoardStack(List[StackElement]):
     def __hash__(self) -> int:  # type:ignore
         return hash(str(self))
 
-    def __contains__(self, other: 'BoardStack'):  # type:ignore
-        other_boards = [el.board for el in other]
-        for el in self:
-            if el.board in other_boards and \
-                    el.amount <= other[other_boards.index(el.board)].amount:
-                pass
-            else:
+    def __contains__(self, other: Union['BoardStack', 'StackElement']):  # type:ignore
+        if isinstance(other, StackElement):
+            try:
+                i = self.index(other)
+                return True if i >= 0 and self[i].amount >= other.amount else False
+            except ValueError:
                 return False
+        
+        for el in self:
+            if el not in other:
+                return False                
         return True
 
     def __sub__(self, other: Union['BoardStack', StackElement]) -> 'BoardStack':
@@ -181,12 +184,15 @@ class BoardStack(List[StackElement]):
             [self.append(x) for x in other]
 
         return self
+    def equal(self,other:StackElement):
+        pass
 
     def append(self, stack_element: StackElement) -> None:
         if stack_element.amount == 0:
             return
 
         try:
+            # проблема в том что они равны но не идентичны
             res = self.pop(self.index(stack_element)) + stack_element
             if res.amount > 0:
                 super().append(res)
