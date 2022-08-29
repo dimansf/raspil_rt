@@ -123,12 +123,12 @@ class BoardStack(List[StackElement]):
 
     @property
     def amount(self):
-        ''' сумма всех досок в колличественном выражении'''
+        ''' сумма всех досок в стаке '''
         return sum([x.amount for x in self])
 
     @property
     def length(self):
-        ''' общая длина всех '''
+        ''' сумма элементов стака, длина массива '''
         return sum([len(x) for x in self])
 
     def __eq__(self, other: 'BoardStack') -> bool:  # type:ignore
@@ -143,7 +143,7 @@ class BoardStack(List[StackElement]):
             self.sort(key=lambda el: hash(el))
             other.sort(key=lambda el: hash(el))
 
-            res = all([self[x] == other[x] for x in range(self.length)])
+            res = all([self[x] == other[x] for x in range(len(self))])
 
             return res
         except ValueError:
@@ -152,7 +152,7 @@ class BoardStack(List[StackElement]):
     def __hash__(self) -> int:  # type:ignore
         return hash(str(self))
 
-    def is_subset(self, other: 'BoardStack'):
+    def __contains__(self, other: 'BoardStack'):  # type:ignore
         other_boards = [el.board for el in other]
         for el in self:
             if el.board in other_boards and \
@@ -246,28 +246,29 @@ class ElementCutsaw(List[BoardStack]):
 
     def select_best_stack_board(self, limit_to: BoardStack):
         '''
-        Выбрать распил удовлетворящий условиям ограничения
+        Выбирает лучший распил для этой доски чтобы в них было множество досок которыми
+        ограничен отбор @limit_to
         '''
         best_stack = None
         for el in self:
-            if el.is_subset(limit_to):
+            if el in limit_to:
                 if best_stack and best_stack.kpd < el.kpd:
                     best_stack = el
                 if best_stack is None:
                     best_stack = el
         if best_stack:
-            return ElementCutsaw(self.store_board, [best_stack])       
-        return 
+            return ElementCutsaw(self.store_board, [best_stack])
+        return
 
     def calc_kpd_and_order_stack_boards(self, optimize_map:  dict[int, bool], width_saw: int):
         """
             Все комбинации проверяются на возможность распила 
             Сортируются по убыванию КПД
-            
+
         """
         if len(self) == 0:
             return
-        [self._calculate_kpd(
+        [self.calculate_kpd(
             self.store_board, b_stack, width_saw, optimize_map[self.store_board.sclad_id])
             for b_stack in self]
         els = filter(lambda el: el.kpd > 0.0, self)
@@ -276,7 +277,7 @@ class ElementCutsaw(List[BoardStack]):
         self.sort(key=lambda x: x.kpd)
         self.reverse()
 
-    def _calculate_kpd(self, board: Board, stack: BoardStack, width_saw: int, optimize: bool):
+    def calculate_kpd(self, board: Board, stack: BoardStack, width_saw: int, optimize: bool):
         """
             -1.0  если невозможно распилить по этой схеме распила
             от 0 до 100 - КПД
@@ -314,6 +315,7 @@ class Cutsaw(MutableMapping[ElementCutsaw, int]):
 
     def __init__(self, seq: List[Tuple[ElementCutsaw, int]] = []):
         super().__init__()
+        self._d:dict[ElementCutsaw, int] = {}
         self.update(seq)
 
     def __hash__(self) -> int:  # type:ignore
@@ -322,17 +324,18 @@ class Cutsaw(MutableMapping[ElementCutsaw, int]):
     def __copy__(self):
 
         return Cutsaw([(copy(key), self[key]) for key in self])
-
-    def __add__(self, other: 'Cutsaw' | ElementCutsaw) -> 'Cutsaw':  # type:ignore
+    def __len__(self) -> int:
+        return len(self._d)
+    def __add__(self, other: Union['Cutsaw', ElementCutsaw]) -> 'Cutsaw':  # type:ignore
         new = copy(self)
 
         if isinstance(other, ElementCutsaw):
-            new._sub_add__(other, 1)
+            new.sub_add__(other, 1)
         if isinstance(other, Cutsaw):
-            [new._sub_add__(x, y) for (x, y) in other.items()]
+            [new.sub_add__(x, y) for (x, y) in other.items()]
         return new
 
-    def _sub_add__(self, other: ElementCutsaw, amount: int):
+    def sub_add__(self, other: ElementCutsaw, amount: int):
         try:
             self[other] += amount
         except KeyError:
@@ -340,41 +343,22 @@ class Cutsaw(MutableMapping[ElementCutsaw, int]):
 
     def __getitem__(self, __k: ElementCutsaw) -> int:
         hhash = hash(__k)
-        for key in self:
+        for key in self._d:
             if hash(key) == hhash:
-                return self[key]
+                return self._d[key]
         raise KeyError
 
-    def __setitem__(self, __k: ElementCutsaw, __v: int) -> None:
-        self.update({__k: __v})
+    def  __setitem__(self, __k: ElementCutsaw, __v: int) -> None:
+        self._d[__k] = __v
 
     def __delitem__(self, __k: ElementCutsaw) -> None:
-        if self.get(__k, None):
-            self.pop(__k)
+        if self._d.get(__k, None):
+            self._d.pop(__k)
         raise KeyError
 
     def __iter__(self) -> Iterator[ElementCutsaw]:
-        _dict = self
+        return iter(self._d)
 
-        class Iter(Iterator[ElementCutsaw]):
-            def __init__(self) -> None:
-                super().__init__()
-                self.gen = self._gen()
-
-            def _gen(self):
-                for key in _dict:
-                    yield key
-
-            def __next__(self) -> ElementCutsaw:
-                try:
-                    return next(self.gen)
-                except:
-                    raise StopIteration
-
-            def __iter__(self):
-                return Iter()
-
-        return Iter()
 
     def delete_unusable_boards(self, boards: list[Board]):
         on_delete: list[ElementCutsaw] = []
@@ -403,7 +387,7 @@ class Cutsaw(MutableMapping[ElementCutsaw, int]):
         self.clear()
         [self.setdefault(val, 1) for val in els]
 
-    def select_good_element_cutsaw(self, store_boards:BoardStack, boards:BoardStack):
+    def select_good_element_cutsaw(self, store_boards: BoardStack, boards: BoardStack):
         s_boards = [el.board for el in store_boards]
         best = None
         for key in self:
@@ -414,5 +398,3 @@ class Cutsaw(MutableMapping[ElementCutsaw, int]):
                 if best and best_stack and best[0].kpd < best_stack[0].kpd:
                     best = best_stack
         return best
-
-

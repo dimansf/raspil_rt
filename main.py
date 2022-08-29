@@ -1,5 +1,5 @@
 
-from inspect import stack
+
 from typing import List, Dict
 # from convertation import TimeCounter
 from data_structs.board import Board, BoardStack, Cutsaw, ElementCutsaw, StackElement
@@ -40,7 +40,7 @@ class Program:
 
         self.resulted_cutsaw: Cutsaw = Cutsaw()
 
-    def _to_order_boards_by_id(self, included_sclads: list[int] = []):
+    def to_order_boards_by_id(self, included_sclads: list[int] = []):
         self.boards_by_id.clear()
         self.store_boards_by_id.clear()
         ids = set([x.id for x in self.boards])
@@ -64,7 +64,7 @@ class Program:
         """
         
         # разбить доски на группы по ид
-        self._to_order_boards_by_id(sclad_id)
+        self.to_order_boards_by_id(sclad_id)
 
         self.cutsaw_map = self.calculate_per_id()
         
@@ -72,16 +72,16 @@ class Program:
         remain_iterations = 100
         while(True):
             remain_iterations -= 1
-            sub_iteration = self._sub_iteration()
+            sub_iteration = self.sub_iteration()
             self.resulted_cutsaw += sub_iteration
             if not len(sub_iteration):
                 break
-            self._to_order_boards_by_id(sclad_id)
+            self.to_order_boards_by_id(sclad_id)
             if remain_iterations < 0:
                     raise LongTimeEvaluationError()
         return
 
-    def _sub_iteration(self):
+    def sub_iteration(self):
         stacks = Cutsaw()
 
         for id in self.store_boards_by_id:
