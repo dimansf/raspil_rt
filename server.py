@@ -1,10 +1,13 @@
 # Модуль socketserver для сетевого программирования
 
 
+from encodings.utf_8 import decode
+import os
 from socketserver import StreamRequestHandler, TCPServer
 from json import loads
 from convertation import convertation_for_program
-
+from config import out_path
+import random
 from main import Program
 # данные сервера
 host = 'localhost'
@@ -19,20 +22,33 @@ class MyTCPHandler(StreamRequestHandler):
     # функция handle делает всю работу, необходимую для обслуживания запроса.
     # доступны несколько атрибутов: запрос доступен как self.request, адрес как self.client_address, экземпляр сервера как self.server
     def handle(self):
-        self.data = self.request.recv(1024)
+        self.data = ''
+        while(True):
+            d = self.request.recv(1024)
+            if not d: break
+            self.data += bytes.decode(d)
+            print(len(self.data))
+
+        print(self.data)
+        
         data = loads(self.data)
         boards, store_boards, optimize = \
             convertation_for_program(data['orders'], data['store'], data['optimize'])
+        
         program = Program(boards, store_boards, optimize,
-                          data['store_order'], data['width_saw'])
-        program.main()
+                          data['store_order'], int(data['width_saw']))
+        name = f'{str(random.randbytes(240))}.txt'
 
-        print('client send: '+str(self.data))
-
-        # sndall - отправляет сообщение
-        self.request.sendall(str(program.resulted_cutsaw).encode())
-        print('we send: ' + str(program.resulted_cutsaw))
-
+        
+        print('Имя отправлено')
+        self.request.sendall(name.encode())
+        # program.main()
+        # with open(os.path.join(out_path, name), 'w') as f:
+        #     f.write(str(program.resulted_cutsaw))
+        
+        
+    def execute_new_process(self):
+        pass
 
 def run_server(addr:tuple[str, int]):
 

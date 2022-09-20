@@ -39,10 +39,12 @@ class TimeCounter(dict[str, list[float]]):
         self.inner_pair_counter:dict[str, int] = {}
    
     def print(self, s:str):
-        with open(self.path, 'w') as f:
+        with open(self.path, 'a') as f:
             f.write(s)
     
-        
+    def write(self):
+        self.print(str(self))
+                
     
     def mark(self, name:str, flag:str=''):
         if self.inner_pair_counter.get(name, None) is None or\
@@ -64,3 +66,40 @@ class TimeCounter(dict[str, list[float]]):
                 self[name].append(s)
 
             
+from typing import Callable
+from convertation import TimeCounter
+
+
+timer = TimeCounter('')
+
+def perform_marking(f:Callable[[str, str], str]):
+    # Внутри себя декоратор определяет функцию-"обёртку". Она будет обёрнута вокруг декорируемой,
+    # получая возможность исполнять произвольный код до и после неё.
+    def the_wrapper_around_the_original_function():
+        timer.mark()
+        function_to_decorate() # Сама функция
+        print("А я - код, срабатывающий после")
+    # Вернём эту функцию
+    return the_wrapper_around_the_original_function
+
+import time
+
+def timeit(func):
+    def timed(*args, **kwargs):
+        ts = time.time()
+        result = func(*args, **kwargs)
+        te = time.time()
+        print('Function', func.__name__, 'time:', round((te -ts)*1000,1), 'ms')
+        print()
+        return result
+    return timed
+
+# @timeit
+# def math_harder():
+#     [x**(x%17)^x%17 for x in range(1,5555)]
+# math_harder()
+
+# @timeit
+# def sleeper_agent():
+#     time.sleep(1)
+# sleeper_agent()
