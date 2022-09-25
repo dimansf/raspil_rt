@@ -1,20 +1,48 @@
-def user_send_request(data:str):
-    import socket
-
-    import json
-    HOST, PORT = "localhost", 8888
-    data = json.loads(data)
-
-    # Create a socket (SOCK_STREAM means a TCP socket)
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        # Connect to server and send data
-        sock.connect((HOST, PORT))
-        sock.sendall(bytes(data + "\n", "utf-8"))
-
-        # Receive data from the server and shut down
-        received = str(sock.recv(1024), "utf-8")
-
-    print("Sent:     {}".format(data))
-    print("Received: {}".format(received))
+# Модуль socketserver для сетевого программирования
 
 
+from socketserver import StreamRequestHandler, TCPServer
+
+
+
+
+# данные сервера
+host = 'localhost'
+port = 8888
+addr = (host, port)
+
+# обработчик запросов TCP подкласс StreamRequestHandler
+
+
+class MyTCPHandler(StreamRequestHandler):
+
+    def handle(self):
+        data = ''
+        while 1:
+            data +=  self.request.recv(1024).strip().decode()
+            if '...///' in data: break
+            
+        
+        
+     
+        
+        
+    def execute_new_process(self):
+        pass
+
+def run_server(addr:tuple[str, int]):
+
+    try:
+        
+        server = TCPServer(addr, MyTCPHandler)
+
+        print('starting server... for exit press Ctrl+C')
+      
+        server.serve_forever()
+    except Exception as e:
+        with open('error.log', 'w+') as f:
+            f.write(repr(e.with_traceback(None)))
+
+
+if __name__ == "__main__":
+    run_server(addr)
