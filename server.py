@@ -1,12 +1,14 @@
 # Модуль socketserver для сетевого программирования
 
-
+import traceback
+import os
 from socketserver import StreamRequestHandler, TCPServer
 from json import loads
-from convertation import convertation_for_program
 
+from raspil_rt.convertation import convertation_for_program
+from raspil_rt.config import out_path, log_file
 import random
-from main import Program
+from raspil_rt.main import Program
 # данные сервера
 host = 'localhost'
 port = 8888
@@ -38,9 +40,14 @@ class MyTCPHandler(StreamRequestHandler):
         
         print('Имя отправлено')
         self.request.sendall(name.encode())
-        # program.main()
-        # with open(os.path.join(out_path, name), 'w') as f:
-        #     f.write(str(program.resulted_cutsaw))
+        program.main()
+        try:
+            with open(os.path.join(out_path, name), 'w') as f:
+                f.write(str(program.resulted_cutsaw))
+        except Exception as ex :
+            with open(log_file, 'w') as f:
+                tb_str = traceback.format_exception(type(ex), ex, tb=ex.__traceback__)
+                f.write("".join(tb_str))
         
         
     def execute_new_process(self):

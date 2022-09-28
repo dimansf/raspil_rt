@@ -1,3 +1,4 @@
+# type:ignore
 '''
     Перед тем как отдать данные с json их нужно подготовить для программы обработки
     после обработки их нужно также преобразовать обратно 
@@ -84,7 +85,7 @@ def perform_marking(f:Callable[[str, str], str]):
 
 import time
 
-def timeit(func):
+def timeit(func): 
     def timed(*args, **kwargs):
         ts = time.time()
         result = func(*args, **kwargs)

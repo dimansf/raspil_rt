@@ -29,7 +29,7 @@ time_log = os.path.join(os.path.dirname(__file__), 'out/time.txt')
 class MainTests(unittest.TestCase):
 
     def setUp(self):
-        self.data_path = big_input
+        self.data_path = small1_input
         self.out = out1
         self.t = TimeCounter(str(time_log))
 
@@ -53,7 +53,7 @@ class MainTests(unittest.TestCase):
 
 class ConversationTests(unittest.TestCase):
     def setUp(self):
-        self.path = input1
+        self.path = big_input
 
     def tearDown(self):
         pass
