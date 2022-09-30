@@ -11,8 +11,13 @@
     "python.testing.unittestEnabled": true,
     "python.analysis.typeCheckingMode": "strict",
     "python.linting.pylintEnabled": true,
-"python.linting.pylintArgs": [
+    "python.autoComplete.extraPaths": ["C:\\Users\\dimansf\\Documents"],
+    "python.autoComplete.preloadModules": ["hou"],  
+    "python.linting.pylintArgs": [
     "--enable=W0614"
 ],
-"python.linting.enabled": false
+"python.linting.enabled": false,
+"python.analysis.extraPaths": [
+    "C:\\Users\\dimansf\\Documents"
+]
 }
