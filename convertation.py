@@ -32,7 +32,12 @@ optimize:dict[str, bool]):
     
     return (_boards, _store_boards, _optimize)
 
-
+def load_simple_config(file:str) -> dict[str,str]:
+    d = {}
+    with open(file) as c:
+        lines =  [list(map(lambda x: x.strip(), line.split('='))) for line in c.readlines()]
+        [d.setdefault(l[0], l[1]) for l in lines]
+    return d
 
 class TimeCounter(dict[str, list[float]]):
     def __init__(self, path:str) -> None:

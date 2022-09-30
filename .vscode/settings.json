@@ -12,7 +12,6 @@
     "python.analysis.typeCheckingMode": "strict",
     "python.linting.pylintEnabled": true,
     "python.autoComplete.extraPaths": ["C:\\Users\\dimansf\\Documents"],
-    "python.autoComplete.preloadModules": ["hou"],  
     "python.linting.pylintArgs": [
     "--enable=W0614"
 ],

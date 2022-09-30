@@ -1,20 +1,33 @@
 # Модуль socketserver для сетевого программирования
-
 import traceback
 import os
-from socketserver import StreamRequestHandler, TCPServer
 from json import loads
 
-from raspil_rt.convertation import convertation_for_program
-from raspil_rt.config import out_path, log_file
+
+from pathlib import Path
+
+
+
+from socketserver import StreamRequestHandler, TCPServer
+from convertation import load_simple_config
+
+
+from raspil_py.convertation import convertation_for_program
+
+
 import random
-from raspil_rt.main import Program
+from main import Program
+
+config_file = Path(__file__).parent.joinpath('config.txt')
+
+config = load_simple_config(str(config_file))
+
 # данные сервера
-host = 'localhost'
-port = 8888
-addr = (host, port)
+
+addr = (config['localhost'], int(config['port']))
 
 # обработчик запросов TCP подкласс StreamRequestHandler
+
 
 
 class MyTCPHandler(StreamRequestHandler):
@@ -42,10 +55,10 @@ class MyTCPHandler(StreamRequestHandler):
         self.request.sendall(name.encode())
         program.main()
         try:
-            with open(os.path.join(out_path, name), 'w') as f:
+            with open(os.path.join(config['out_path'], name), 'w') as f:
                 f.write(str(program.resulted_cutsaw))
         except Exception as ex :
-            with open(log_file, 'w') as f:
+            with open(config['log_file'], 'w') as f:
                 tb_str = traceback.format_exception(type(ex), ex, tb=ex.__traceback__)
                 f.write("".join(tb_str))
         
@@ -67,3 +80,5 @@ def run_server(addr:tuple[str, int]):
 
 if __name__ == "__main__":
     run_server(addr)
+
+
