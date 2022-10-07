@@ -1,5 +1,7 @@
 
+# from json import loads
 from typing import List, Dict
+# from convertation import convertation_for_program
 
 from data_structs.board import Board, BoardStack, Cutsaw, ElementCutsaw, StackElement
 
@@ -129,3 +131,19 @@ class Program:
 
         other_boards.append(iteration_board)
         return el_cutsaw
+
+# if __name__ == "__main__":
+#     data:Any = loads(data[:-6])
+#     boards, store_boards, optimize = \
+#             convertation_for_program(data['orders'], data['store'], data['optimize'])
+        
+#     program = Program(boards, store_boards, optimize,
+#                           data['store_order'], int(data['width_saw']))
+#      program.main()
+#         try:
+#             with open(os.path.join(config['out_path'], name), 'w') as f:
+#                 f.write(str(program.resulted_cutsaw))
+#         except Exception as ex :
+#             with open(config['log_file'], 'w') as f:
+#                 tb_str = traceback.format_exception(type(ex), ex, tb=ex.__traceback__)
+#                 f.write("".join(tb_str))
