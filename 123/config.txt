@@ -1,4 +1,0 @@
-out_path=C:\Users\dimansf\Documents\raspil_py_exe\server
-localhost=localhost
-port=9999
-log_file=C:\Users\dimansf\Documents\raspil_py_exe\server\raspil_perror.txt

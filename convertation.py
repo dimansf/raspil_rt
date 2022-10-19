@@ -46,7 +46,7 @@ class TimeCounter(dict[str, list[float]]):
    
     def print(self, s:str):
         with open(self.path, 'a') as f:
-            f.write(s)
+            f.write(f'\n{s}')
     
     def write(self):
         self.print(str(self))

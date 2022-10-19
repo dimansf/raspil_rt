@@ -2,6 +2,6 @@
 *__pycache__/
 *.mypy_cache/
 */tests/dst/
-
+/temp*
 /test2/
 */tests/stdout.json

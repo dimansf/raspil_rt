@@ -1,5 +1,4 @@
 from copy import copy
-# import json
 from typing import Any, Iterable, Iterator, List, Tuple,  Union
 from collections.abc import MutableMapping
 
@@ -379,8 +378,7 @@ class Cutsaw(MutableMapping[ElementCutsaw, int]):
             def __iter__(self):
                 return InnerIterator()
 
-        # if debug:
-        #     print(str(s))
+      
         return InnerIterator()
 
     def __len__(self) -> int:

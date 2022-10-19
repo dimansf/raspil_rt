@@ -1,14 +1,11 @@
 
 
 
-from __init__ import __init__
-
-__init__()
 import socket
-from raspil_py.tests.main_test import  big_input,small1_input
+from raspil_rt.tests.main_test import  big_input,small1_input
 
 host = 'localhost'
-port = 11999
+port = 9999
 addr = (host, port)
 conn = socket.create_connection(addr)
 
@@ -25,7 +22,7 @@ def data3():
 def data_test():
      conn.send('12345678..9'.encode())
 
-data1()
+data3()
 
 print(f'name is {conn.recv(1024).strip().decode()}')
 conn.close()

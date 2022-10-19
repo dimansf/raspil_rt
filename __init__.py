@@ -9,4 +9,3 @@ def __init__():
     print(str(sys.path))
 
 
-__init__()

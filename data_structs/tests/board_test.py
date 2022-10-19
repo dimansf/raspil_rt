@@ -148,7 +148,20 @@ class BoardStackTests(unittest.TestCase):
 
 class ElementCutsawTests(unittest.TestCase):
     def setUp(self):
-        pass
+         self.ec = ElementCutsaw(Board(1, 2000, 3, 0), [
+            BoardStack([
+                StackElement(Board(1, 100, 0, 0), 5),
+                StackElement(Board(1, 200, 0, 0), 5)
+            ]),
+            BoardStack([
+                StackElement(Board(1, 100, 0, 0), 4),
+                StackElement(Board(1, 200, 0, 0), 4)
+            ]),
+            BoardStack([
+                StackElement(Board(1, 100, 0, 0), 2),
+                StackElement(Board(1, 200, 0, 0), 2)
+            ]),
+        ])
 
     def tearDown(self):
         pass
@@ -160,7 +173,7 @@ class ElementCutsawTests(unittest.TestCase):
             self.assertIsNot(el[0], el[1])
 
     def test___eq__(self):
-        self.assertEqual(ec1, copy(ec1))
+        self.assertEqual(self.ec, copy(self.ec))
 
     def test_thick_off_stack_boards(self):
         ec_ = copy(ec1)

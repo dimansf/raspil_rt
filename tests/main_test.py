@@ -2,12 +2,12 @@
 import json
 import os.path
 
-from convertation import TimeCounter, convertation_for_program
+from raspil_rt.convertation import TimeCounter, convertation_for_program
 
 
 import unittest
 
-from main import Program
+from raspil_rt.main import Program
 
 boards = [
     [1, 2000, 0, 10],
@@ -29,7 +29,7 @@ time_log = os.path.join(os.path.dirname(__file__), 'out/time.txt')
 class MainTests(unittest.TestCase):
 
     def setUp(self):
-        self.data_path = small1_input
+        self.data_path = big_input
         self.out = out1
         self.t = TimeCounter(str(time_log))
 
