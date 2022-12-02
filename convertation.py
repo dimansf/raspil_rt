@@ -73,7 +73,7 @@ class TimeCounter(dict[str, list[float]]):
 
             
 from typing import Callable
-from convertation import TimeCounter
+
 
 
 timer = TimeCounter('')

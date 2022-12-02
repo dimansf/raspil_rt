@@ -14,7 +14,7 @@ from pathlib import Path
 from socketserver import StreamRequestHandler, TCPServer
 
 
-from convertation import load_simple_config
+from raspil_rt.convertation import load_simple_config
 
 
 from raspil_rt.main import Program
