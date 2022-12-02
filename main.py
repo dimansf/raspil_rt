@@ -1,7 +1,7 @@
 
 from typing import List, Dict
 
-from data_structs.board import Board, BoardStack, Cutsaw, ElementCutsaw, StackElement
+from raspil_rt.data_structs.board import Board, BoardStack, Cutsaw, ElementCutsaw, StackElement
 
 
 class Program:

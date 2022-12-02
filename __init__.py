@@ -4,8 +4,8 @@ def __init__():
 
 
     p = Path(__file__).parent.parent
-    sys.path.append(str(p))
-    print(f'dirname - {p}')
-    print(str(sys.path))
+    if str(p) not in sys.path:
+        sys.path.append(str(p))
 
+__init__()
 

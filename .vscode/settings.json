@@ -11,12 +11,12 @@
     "python.testing.unittestEnabled": true,
     "python.analysis.typeCheckingMode": "strict",
     "python.linting.pylintEnabled": true,
-    "python.autoComplete.extraPaths": ["C:\\Users\\dimansf\\Documents\\coding\\raspil_rt"],
+    "python.autoComplete.extraPaths": ["C:\\Users\\dimansf\\Documents"],
     "python.linting.pylintArgs": [
     "--enable=W0614"
 ],
 "python.linting.enabled": false,
 "python.analysis.extraPaths": [
-    "C:\\Users\\dimansf\\Documents\\coding\\raspil_rt"
+    "C:\\Users\\dimansf\\Documents"
 ]
 }
