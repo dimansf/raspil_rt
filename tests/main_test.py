@@ -18,6 +18,7 @@ store_boards = [
 ]
 
 
+
 big_input = os.path.join(os.path.dirname(__file__), 'resources/big.json')
 small1_input = os.path.join(os.path.dirname(__file__), 'resources/small.json')
 

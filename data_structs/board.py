@@ -78,7 +78,7 @@ class StackElement():
             Общая длина всех досок в стек элементе
             amount * len mother board
         """
-        return self.len * self.amount
+        return self.board.sclad_id * self.amount
 
     def __add__(self, other: 'StackElement') -> 'StackElement':
         self = copy(self)
@@ -120,6 +120,7 @@ class BoardStack(List[StackElement]):
     def amount(self):
         ''' количество стопок в стаке'''
         return super().__len__()
+    
     def __eq__(self, other: 'BoardStack') -> bool:  # type:ignore
        
         try:

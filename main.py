@@ -32,12 +32,14 @@ class Program:
 
         self.resulted_cutsaw: Cutsaw = Cutsaw()
 
-    def main(self):
+    def main(self, rem:int=-1):
         remain_iterations = 1000
 
         while(len(self.priority_map)):
 
             stores = self.priority_map.pop()
+            if rem ==  len(self.priority_map):
+                break
             while(self.iteration(stores) != 0):
                 if remain_iterations < 0:
                     raise Exception(
