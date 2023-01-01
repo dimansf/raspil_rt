@@ -1,5 +1,5 @@
 from copy import copy
-from functools import cached_property
+ from functools import cached_property
 from typing import Any, Iterable, Iterator, List, Tuple,  Union
 from collections.abc import MutableMapping
 
