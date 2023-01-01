@@ -1,8 +1,10 @@
 from copy import copy
+from functools import cached_property
 from typing import Any, Iterable, Iterator, List, Tuple,  Union
 from collections.abc import MutableMapping
 
 debug = False
+
 
 class NegativeValueError(Exception):
     '''
@@ -13,28 +15,33 @@ class NegativeValueError(Exception):
 
 class Board():
     """
-        (id=1, len=1500, sclad_id=3)
+        (id=1, len=1500, sclad_id=3, min_remain, max_remain)
     """
 
-    def __init__(self, id: int, len: int, sclad_id: int, _: Any, min_remain: int = 0, max_remain: int = 0, *unused: Any) -> None:
-        self.id = id
-        self.len = len
+    def __init__(self, num_id: int, length: int, sclad_id: int, _: Any, min_remain: int = 0, max_remain: int = 0, *unused: Any) -> None:
+        self.num_id = num_id
+        self.len = length
         self.sclad_id = sclad_id
         self.max_remain = max_remain
         self.min_remain = min_remain
+        self.str = f'[{self.num_id}, {self.len}, {self.sclad_id}]'
+        self.hash = hash(str(self))
+        self.id = id(self)
 
-    def __len__(self):
-        return self.len
+   
 
     def __str__(self) -> str:
-        return f'[{self.id}, {self.len}, {self.sclad_id}]'
+        return self.str
 
     def __eq__(self, other: 'Board') -> bool:  # type:ignore
-        return (self.id, self.len, self.sclad_id) == \
-            (other.id, other.len,  other.sclad_id)
+        return id(self) == id(other)
 
     def __hash__(self) -> int:
-        return hash(str(self))
+        return self.hash
+
+
+def board_builder(boards: list[Board]):
+    pass
 
 
 class StackElement():
@@ -44,145 +51,125 @@ class StackElement():
     """
 
     def __hash__(self) -> int:
-        return hash(str(self))
+        return self.hash
 
-    def __init__(self, board: Board, amount: int):
+    def __init__(self, board: Board, amount: int, stack_dict: dict[Board, list['StackElement']]):
         self.board = board
         self.amount = amount
+        self.hash = hash(str(self))
+        self.num_id = self.board.num_id
+        self.sclad_id = self.board.sclad_id
+        self.str = ('{'+f'{self.board}: {self.amount}'+'}')
+        self.len = self.board.len * self.amount
+        self.stack_base = stack_dict
+        self.id = id(self)
 
-    @property
-    def id(self):
-        return self.board.id
-
-    @property
-    def len(self):
-        """
-        Не тоже самое что и __Len__
-        возвращает длину материнской доски
-        """
-        return self.board.len
-
-    @property
-    def sclad_id(self):
-        return self.board.sclad_id
+    def identity(self, other: 'StackElement'):
+        return id(self) == id(other)
 
     def __eq__(self, other: 'StackElement'):  # type:ignore
         return self.board == other.board
-        # and self.amount == other.amount
 
     def __str__(self) -> str:
-        return ('{'+f'{self.board}: {self.amount}'+'}')
+        return self.str
 
-    def __len__(self):
-        """
-            Общая длина всех досок в стек элементе
-            amount * len mother board
-        """
-        return self.board.sclad_id * self.amount
+    
 
-    def __add__(self, other: 'StackElement') -> 'StackElement':
-        self = copy(self)
+    def __add__(self, other: 'StackElement', sub: bool = False) -> 'StackElement':
 
-        if self == other:
-            self.amount += other.amount
-            if self.amount < 0:
+        if self.board == other.board:
+            try:
+                if sub:
+                    return self.stack_base[self.board][self.amount - other.amount]
+                else:
+                    return self.stack_base[self.board][self.amount + other.amount]
+
+            except IndexError:
                 raise Exception(
-                    'Failed to add/subtract two StackElements self.amount < 0')
-            return self
+                    'Failed to add two StackElements amount < 0')
 
         raise Exception('Failed to add two StackElements')
 
     def __sub__(self, other: 'StackElement') -> 'StackElement':
-        other = copy(other)
-        other.amount = - other.amount
-        return self + other
-
-    def __copy__(self):
-
-        return StackElement(self.board, int(self.amount))
+        return self.__add__(other, True)
 
 
-class BoardStack(List[StackElement]):
+def stack_board_builder(stack_boards: list[StackElement]) -> dict[int, list[StackElement]]:
+    pass
+
+
+class BoardStack(dict[int, StackElement]):
     """
         набор стопок досок, каждая с id и количеством в кучке
-        [(id=1, len=1500, sclad_id=3):10, ...]
+        {(id=1, len=1500, sclad_id=3): "StackElement(id=1, len=1500, sclad_id=3):10", 
+        ...}
     """
 
-    def __init__(self, seq: List[StackElement] = [], kpd: float = 0.0):
+    def __init__(self, se: list[StackElement], kpd: float = 0.0):
         super().__init__()
         self.kpd = kpd
-        self.extend(seq)
+        [self.append(x) for x in se]
 
-    def __len__(self) -> int:
-        return sum([len(x) for x in self])
-    
     @property
     def amount(self):
-        ''' количество стопок в стаке'''
-        return super().__len__()
+        return sum([x.amount for x in self.values()])
     
+    def shallow_eq_sign(self):
+        return [[el, self[el].len] for el in self]
+
     def __eq__(self, other: 'BoardStack') -> bool:  # type:ignore
-       
         try:
-           
-            self.sort(key=lambda el: hash(el))
-            other.sort(key=lambda el: hash(el))
+            if self.amount == other.amount and len(self.keys()) == len(other.keys()):
 
-            res =   self.amount == other.amount and \
-                all([self[x] == other[x] for x in range(self.amount)])
-            
-            return res
-        except ValueError:
-        
+                for k in self:
+                    other[k]
+                return True
+            else:
+                return False
+        except KeyError:
             return False
-
-    def __hash__(self) -> int:  # type:ignore
-        return hash(str(self))
-
     @property
-    def element_count(self):
-        return super().__len__()
+    def total_len(self) -> int:
+        return sum([el.len for el in self.values()])
 
     def __sub__(self, other: Union['BoardStack', StackElement]) -> 'BoardStack':
-        other = copy(other)
         if isinstance(other, BoardStack):
-            for el in other:
-                el.amount = -el.amount
+            for el in other.values():
+                self.append(el, False)
         if isinstance(other, StackElement):
-            other.amount = -other.amount
+            self.append(other, False)
 
-        return self + other
-
-    def __add__(self, other: Union[StackElement, 'BoardStack']):  # type:ignore
-        self = copy(self)
-        if isinstance(other, StackElement):
-            self.append(other)
-
-        if isinstance(other, BoardStack):
-            [self.append(x) for x in other]
-
-        if any([x.amount < 0 for x in self]):
-            raise Exception(
-                'Incorrect behavior BoardStack.__add__ amount of Stackelement lower than 0')
-
-        res = list(filter(lambda x: x.amount > 0, self))
-
-        self.clear()
-        self.extend(res)
         return self
 
-    def append(self, stack_element: StackElement) -> None:
+    def __add__(self, other: Union[StackElement, 'BoardStack'])-> 'BoardStack':
+        if isinstance(other, BoardStack):
+            for el in other.values():
+                self.append(el)
+        if isinstance(other, StackElement):
+            self.append(other)
+        return self
+
+    def append(self, stack_element: StackElement, add:bool=True) -> None:
         if stack_element.amount == 0:
-            return 
+            return
         # + addition
-        if stack_element.amount > 0:
-            try:
-                self[self.index(stack_element)] += stack_element
-            except ValueError:
-                super().append(copy(stack_element))
+        board = stack_element.board
+        res = self.pop(board.id, None)
+        if add:
+            if res:
+                self[board.id] = res.stack_base[board][res.amount + stack_element.amount]
+            else:
+                self[board.id] = stack_element.stack_base[board][stack_element.amount]
         # - subtraction
         else:
-            self[self.index(stack_element)] += stack_element
+            try:
+                if res:
+                    self[board.id] = res.stack_base[board][res.amount - stack_element.amount]
+                else:
+                    raise KeyError()
+            except KeyError:
+                raise Exception(
+                'Некорректное вычитание BoardStack.append()')
 
     def extend(self, __iterable: Iterable[StackElement]) -> None:
         [self.append(x) for x in __iterable]
@@ -190,18 +177,16 @@ class BoardStack(List[StackElement]):
     def __str__(self) -> str:
         return '\n[ ' + ','.join([str(el) for el in sorted(self, key=lambda el: hash(el))]) + '] '
 
-
-
     def __copy__(self):
-        return BoardStack([copy(x) for x in self], self.kpd)
+        return BoardStack([x for x in self.values()], self.kpd)
 
 
 class ElementCutsaw(List[BoardStack]):
     """
     board - доска
-    boards_combinations - набор кучек досок
+    boards_combinations - набор досок комбинаций
     """
-    
+
     def __init__(self, store_board: Board, seq: Iterable[BoardStack] = []):
         super().__init__()
         self.store_board = store_board
@@ -209,24 +194,30 @@ class ElementCutsaw(List[BoardStack]):
 
     def __copy__(self):
         return ElementCutsaw(self.store_board, [copy(x) for x in self])
-    def length(self):
-        return sum([len(el) for el in self])
+    @property
+    def total_len(self):
+        return sum([el.total_len for el in self])
 
+    def total_amount(self):
+        return sum([el.amount for el in self])
+    
+    
     def __eq__(self, other: 'ElementCutsaw') -> bool:  # type:ignore
-        if self.store_board == other.store_board and \
-                len(self) == len(other) and \
-                self.length == other.length:
-                
-            pass
-        else:
+        return self.shallow_eq(self, other) # type:ignore
+
+    def shallow_eq(self, other: 'ElementCutsaw') -> bool:
+        if not self.store_board == other.store_board or \
+            not self.total_len == other.total_len or \
+            not self.total_amount == other.total_amount:
             return False
         try:
-            ar1 = sorted(self, key=lambda el: hash(el))
-            ar2 = sorted(other, key=lambda el: hash(el))
-            return all([hash(ar1[x]) == hash(ar2[x])  for x in range(len(ar1))])
+            ar1 = self
+            ar2 = 
+            return all([hash(ar1[x]) == hash(ar2[x]) for x in range(len(ar1))])
 
         except ValueError:
             return False
+        
 
     def __hash__(self) -> int:  # type:ignore
         return hash(str(self))
@@ -257,19 +248,19 @@ class ElementCutsaw(List[BoardStack]):
         if len(self) > 1:
             raise Exception(
                 'after thick_off_stack_boards StackBoards must be only 0-1')
+
     def __iadd__(self, __x: 'ElementCutsaw') -> 'ElementCutsaw':  # type:ignore
-       
+
         super().__iadd__(__x)
-      
+
         return self
 
     def _kpd_to_saw(self, board: Board, stack: BoardStack, width_saw: int, optimize: bool):
         """
             Возвращается кпд данного распила для этой доски 
             -1.0 если невозможно распилить по этой схеме
-        """
-        """
-            -1.0  если невозможно распилить по этой схеме распила
+        
+          
             от 0 до 100 - КПД
         """
         if stack.amount == 0:
@@ -328,7 +319,6 @@ class Cutsaw(MutableMapping[ElementCutsaw, int]):
             if debug:
                 print('other ' + str(other))
                 print('new ' + str(new))
-                
 
             [new._sub_add__(x, y) for (x, y) in other.items()]
         return new
@@ -379,7 +369,6 @@ class Cutsaw(MutableMapping[ElementCutsaw, int]):
             def __iter__(self):
                 return InnerIterator()
 
-      
         return InnerIterator()
 
     def __len__(self) -> int:
@@ -409,4 +398,5 @@ class Cutsaw(MutableMapping[ElementCutsaw, int]):
         self.clear()
         self.setdefault(best_element, 1) if best_element.kpd > 0 else None
         if len(self) > 1 or len(self.items()) > 1:
-            raise Exception('select_best_stack_board doesnt work correctly: items more than 1')
+            raise Exception(
+                'select_best_stack_board doesnt work correctly: items more than 1')

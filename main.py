@@ -121,7 +121,7 @@ class Program:
         el_cutsaw = ElementCutsaw(board)
 
         for i in range(iteration_board.amount + 1):
-            if len(board) >= len(current_stack) + i * iteration_board.len:
+            if len(board) >= len(current_stack) + i * iteration_board.board.len:
 
                 good_stack = current_stack + \
                     StackElement(iteration_board.board, i)
