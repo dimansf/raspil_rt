@@ -5,3 +5,9 @@
 /temp*
 /test2/
 */tests/stdout.json
+tests/1.txt
+.gitignore
+tests/2
+tests/2_2
+tests/2_simple
+tests/22
