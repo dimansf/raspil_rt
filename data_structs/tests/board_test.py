@@ -1,231 +1,265 @@
-from os import path
 
-from data_structs.board import *
+
+from raspil_rt.data_structs.board import *
 import unittest
 from copy import copy
 
 # id len sclad amount min_per max_per
 
 
-
-
-boards = [
-    [1, 100, 0, 5, 0, 0],
-    [1, 200, 0, 10, 0, 0],
-    [2, 200, 0, 5, 0, 0],
-    [2, 300, 0, 10, 0, 0]
-]
-
-
-store_boards = [
-    [1, 520, 1, 2, 40, 400],
-    [1, 2040, 2, 2, 40, 600],
-    [1, 2580, 3, 2, 40, 800],
-    [2, 1020, 1, 2, 40, 600],
-    [2, 1540, 2, 2, 40, 800],
-    [2, 3040, 3, 2, 40, 1200],
-    [1, 6000, 4, 10, 40, 1200],
-    [2, 6000, 4, 10, 40, 1200],
-]
-
-
-b0 = Board(*boards[0])
-b1 = Board(*boards[1])
-b2 = Board(*boards[2])
-b3 = Board(*boards[3])
-
-se0 = StackElement(b0, boards[0][3])
-se1 = StackElement(b1, boards[1][3])
-se2 = StackElement(b2, boards[2][3])
-se3 = StackElement(b3, boards[3][3])
-
-bs1 = BoardStack([se0, se1])
-bs_1 = BoardStack([se0, se0])
-bs2 = BoardStack([se3, se2])
-bs_2 = BoardStack([se2, se2])
-
-ec1 = ElementCutsaw(Board(*store_boards[0]), [BoardStack([se0]), BoardStack([se0, se0]),
-                                              BoardStack([se1])])
-ec2 = ElementCutsaw(Board(*store_boards[2]), [BoardStack([se0, se1]), BoardStack([se2]),
-                                              BoardStack([se1])])
-
-cs = Cutsaw([(ec1, 1), (ec2,1)])
-pass
-
 class BoardTests(unittest.TestCase):
 
     def setUp(self):
-        pass
+        self.b1 = Board(1, 100, 0)
+        self.b2 = Board(2, 200, 0)
 
     def tearDown(self):
         pass
 
-    def test_equality(self):
-
-        self.assertEqual(b1, copy(b1))
-
-    def test_sstr(self):
-        print(b1)
-        self.assertNotIn('object at', str(b1))
-
-
-
-class StackElementTests(unittest.TestCase):
-    def setUp(self):
+    def test___init__(self):
         pass
 
-    def tearDown(self):
+    def test___hash__(self):
         pass
-
-    def test_copy(self):
-        s_t = copy(se0)
-        self.assertEqual(str(se0) == str(se0), True)
-        self.assertIsNot(se0, s_t)
-
-    def test_identity(self):
-        se_0 = copy(se0)
-        se_0.amount += 1
-        self.assertEqual(str(se_0)== str(se0), False)
-        self.assertEqual(se0, se_0)
-
-    def test___add__(self):
-
-        se_sum = se0 + se0
-        self.assertEqual(
-            se_sum.amount, se0.amount + se0.amount)
-        self.assertIsNot(se1, se_sum)
-        self.assertIsNot(se0, se_sum)
-
-    def test___sub__(self):
-        se_1 = copy(se1)
-        se_1.amount = se1.amount+1
-        se_sub = se_1 - se1
-        self.assertEqual(se_sub.amount, 1)
-        self.assertIsNot(se1, se_sub)
-        self.assertIsNot(se_1, se_sub)
 
     def test___eq__(self):
-        self.assertEqual(se0, copy(se0))
-        self.assertNotEqual(se0, se1)
 
-    def test_sstr(self):
-        self.assertNotIn('object at', str(se0))
+        self.assertEqual(self.b1, self.b1)
+        self.assertNotEqual(self.b1, self.b2)
+
+    def test___str__(self):
+
+        self.assertNotIn('object at', str(self.b1))
 
 
-class BoardStackTests(unittest.TestCase):
+class BoardStackMix:
+
+    base2 = Board(2, 200, 0)
+    base1 = Board(1, 100, 0)
+    board_stack = BoardStack([
+        (base1, 5),
+        (base2, 43),
+        (base1, 5),
+
+    ], remain=500)
+
+
+class BoardStackTests(unittest.TestCase, BoardStackMix):
+
     def setUp(self):
         pass
 
     def tearDown(self):
         pass
 
-    def test___copy__(self):
-        els_t = copy(bs1)
-        els = zip(els_t, bs1)
-        for el in els:
-            self.assertIsNot(el[0], el[1])
+    def test___isub__(self):
+        pass
 
-    def test___len__(self):
-        stack1 = BoardStack([se0, se1])
-        self.assertEqual(len(se0) + len(se1), len(stack1))
+    def test___init__(self):
+        self.assertEqual(self.board_stack.remain, 500)
+
+    def test_amount(self):
+        self.assertEqual(43 + 5*2, self.board_stack.amount)
+
+    def test_total_len(self):
+        self.assertEqual(200*43 + 10*100, self.board_stack.total_len)
+
+    def test___contains__(self):
+        bs1 = BoardStack([
+            (self.base2, 43),
+        ])
+        bs2 = BoardStack([
+            (self.base2, 44),
+        ])
+        self.assertNotIn(bs2, self.board_stack)
+        self.assertIn(bs1, self.board_stack)
+
+    def test___eq__(self):
+        board_stack = BoardStack([
+            (self.base1, 5),
+            (self.base2, 43),
+            (self.base1, 5),
+        ], remain=500)
+        self.assertEqual(board_stack, self.board_stack)
+
+    def test___str__(self):
+        s = str(self.board_stack)
+        self.assertNotIn('object at', s)
+
+    def test___copy__(self):
+        b1 = copy(self.board_stack)
+        self.assertIn(b1, self.board_stack)
 
     def test___sub__(self):
-        self.assertEqual(len(bs1 - bs1), 0)
-        self.assertEqual(len(bs1 - StackElement(b1, 1)), len(se1)+len(se0) - len(b1))
+        bs1 = BoardStack([
+            (self.base1, 10),
+            (self.base2, 15)
+        ])
+        bs2 = BoardStack([
+            (self.base1, 15),
+            (self.base2, 7)
+        ])
 
-    def test_eq(self):
-        self.assertEqual(bs1, copy(bs1))
-        self.assertEqual(BoardStack(), BoardStack())
+        bs4 = BoardStack([
+            (self.base1, 10),
+            (self.base2, 15)
+        ])
+        self.assertEqual((bs1 - bs4).amount, 0)
+        self.assertRaises(NegativeValueError, lambda: bs1 - bs2)
 
     def test___add__(self):
-        self.assertEqual(bs1 + bs1 - bs1, copy(bs1))
-        self.assertEqual(1, bs_1.element_count)
-    def test_sstr(self):
-        s= str(bs1)
-        self.assertNotIn('object at', s)
-    
+        bs3 = BoardStack([
+            (self.base1, 15),
+            (self.base2, 7)
+        ])
+        self.assertEqual((bs3+bs3).amount, 15*2+7*2)
 
 
-class ElementCutsawTests(unittest.TestCase):
+class BoardsWrapperTests(unittest.TestCase, BoardStackMix):
     def setUp(self):
-         self.ec = ElementCutsaw(Board(1, 2000, 3, 0), [
+        self.bw = BoardsWrapper(self.board_stack)
+
+    def tearDown(self):
+        pass
+
+    def test___init__(self):
+        pass
+
+    def test_pop(self):
+
+        self.assertEqual(self.bw.pop()[0], list(self.board_stack.keys())[1])
+
+    def test_shift(self):
+        self.bw.pop()
+        self.bw.shift()
+        self.assertEqual(self.bw.pop()[0], list(self.board_stack.keys())[1])
+
+
+class ElementCutsawTests(unittest.TestCase, BoardStackMix):
+    def setUp(self):
+        self.ec = CutsawElement(Board(1, 2000, 3, 1, 200, 600), [
             BoardStack([
-                StackElement(Board(1, 100, 0, 0), 5),
-                StackElement(Board(1, 200, 0, 0), 5)
-            ]),
+                (Board(1, 100, 0), 5),
+                (Board(1, 200, 0), 5)
+            ], remain=500),
             BoardStack([
-                StackElement(Board(1, 100, 0, 0), 4),
-                StackElement(Board(1, 200, 0, 0), 4)
-            ]),
+                (Board(1, 100, 0), 4),
+                (Board(1, 200, 0), 4)
+            ], remain=800),
             BoardStack([
-                StackElement(Board(1, 100, 0, 0), 2),
-                StackElement(Board(1, 200, 0, 0), 2)
-            ]),
+                (Board(1, 100, 0), 2),
+                (Board(1, 200, 0), 2)
+            ], remain=1400),
         ])
 
     def tearDown(self):
         pass
 
+    def test___init__(self):
+        pass
+
+    def test_length(self):
+        pass
+
+    def test_sort_stacks(self):
+        self.ec.sort_stacks()
+        if self.ec.sorted:
+            self.assertLess(self.ec.sorted[0].remain, self.ec.sorted[1].remain)
+
+    def test_get_best_stack(self):
+        res = self.ec.get_best_stack(self.ec[1])
+
+        self.assertEqual(res[0].remain, self.ec[1].remain)
+
+    def test___iadd__(self):
+        pass
+
+    def test___str__(self):
+        s = str(self.ec)
+        self.assertNotIn('object at', s)
+
     def test___copy__(self):
-        ec1_t = copy(ec1)
-        els = zip(ec1_t, ec1)
-        for el in els:
-            self.assertIsNot(el[0], el[1])
+        pass
 
     def test___eq__(self):
         self.assertEqual(self.ec, copy(self.ec))
 
-    def test_thick_off_stack_boards(self):
-        ec_ = copy(ec1)
-        ec_.thick_off_stack_boards({1: False, 2: False}, 4)
-        self.assertEqual(1, len(ec_))
 
-    def test__can_to_saw(self):
-        pass
+class CutsawMix():
+    el1 = CutsawElement(Board(1, 2000, 2, 1, 200, 600), [
+        BoardStack([(Board(1, 100, 0), 4), (Board(1, 200, 0), 4)]),
+        BoardStack([(Board(1, 200, 0), 4)]),
+        BoardStack([(Board(1, 300, 0), 6)]),
+        BoardStack([(Board(1, 200, 0), 9)]),
+    ])
+    el2 = CutsawElement(Board(1, 6000, 4, 1, 200, 1200), [
+        BoardStack([(Board(1, 2000, 0), 2), (Board(1, 200, 0), 9)]),
+        BoardStack([(Board(1, 2000, 0), 1)]),
+        BoardStack([(Board(1, 1000, 0), 5), (Board(1, 100, 0), 5)]),
+    ])
+    el3 = CutsawElement(Board(1, 720, 3, 1, 200, 600),  [
+        BoardStack([(Board(1, 100, 0), 4)]),
+        BoardStack([(Board(1, 150, 0), 4), (Board(1, 100, 0), 1)])
+    ])
 
-    def test_sstr(self):
-        s= str(ec1)
-        self.assertNotIn('object at', s)
-       
 
+class CutsawTests(unittest.TestCase, CutsawMix):
 
-
-
-class CutsawTests(unittest.TestCase):
     def setUp(self):
-        pass
+        self.cut = Cutsaw([
+            (self.el1, 1),
+            (self.el2, 1),
+            (self.el3, 1),
+        ])
 
     def tearDown(self):
         pass
+
+    def test___init__(self):
+        pass
+
+    def test___getitem__(self):
+        self.assertEqual(self.cut[self.el2], 1)
+
+    def test___setitem__(self):
+        self.cut[self.el1]= 100
+        self.assertEqual(self.cut[self.el1], 100)
+
+    def test___delitem__(self):
+        del self.cut[self.el1]
+        self.assertEqual(len(self.cut), 2)
+
+
+    def test___iter__(self):
+        it =iter(self.cut)
+        self.assertEqual(next(it), self.el1)
+            
+
+    def test___str__(self):
+        s = str(self.cut)
+        self.assertNotIn('object at', s)
+
+    def test_get_best_cutsaw_elements(self):
+        pass
+
     def test__iter(self):
         pass
+
     def test___copy__(self):
-        self.assertIsNot(copy(cs), cs)
+        cut2 = copy(self.cut)
+        cut2[self.el2] = 100
+        self.assertNotEquals(cut2[self.el2], self.cut[self.el2])
 
-    def test___eq__(self):
-        ccs = copy(cs)
-        els = zip(ccs, cs)
-        for el in els:
-            if __debug__:
-                print(str(el[0]))
-                print(str(el[1]))
-            self.assertIsNot(el[0], el[1])
+ 
 
-    def test_thick_off_cutsaw_elements(self):
-        css = copy(cs)
-        css.thick_off_cutsaw_elements({1:True, 2:True, 3:True, 4:True, 5:False}, 4)
     def test___add__(self):
-        css = cs + cs + cs
-        self.assertTrue( True, all(x == 2 for x in css.values()))
-    def test__can_to_saw(self):
-        pass
-    def test_toJSON(self):
-        with open(path.join(path.dirname(__file__), 'cutsaw.json'), 'w') as f:
-            css = cs+cs
-            f.write(str(css))
-            # f.write(str(css))
+        cut2 = self.cut + self.cut
+        self.assertEqual(cut2[self.el2],  self.cut[self.el2]*2)
+
+
+
 
 
 if __name__ == '__main__':
-    
+
     unittest.main()
