@@ -31,16 +31,16 @@ class Board():
         self.max_remain = max_remain
         self.min_remain = min_remain
 
-        self.id = id(self)
+        self._id = id(self)
 
     def __str__(self) -> str:
         return f'[{self.num_id}, {self.len}, {self.sclad_id}, 0, {self.min_remain}, {self.max_remain}]'
 
     def __eq__(self, other: 'Board') -> bool:  # type:ignore
-        return self.id == other.id
+        return self._id == other._id
 
     def __hash__(self) -> int:
-        return self.id
+        return self._id
 
 
 class BoardStack(dict[Board, int]):
@@ -103,8 +103,8 @@ class BoardStack(dict[Board, int]):
         return s
 
     def __isub__(self, other: Union['BoardStack', tuple[Board, int]]) -> 'BoardStack':
+        
         self.__add__(other, False, True)
-
         return self
 
     def __add__(self, other: Union['BoardStack', tuple[Board, int]],
@@ -145,12 +145,15 @@ class BoardsWrapper:
         self.items = list(target.items())
 
     def pop(self) -> tuple[Board, int]:
-        try:
-            self.i += 1
-            return self.items[self.len - self.i]
-        except IndexError:
-            self.i -= 1
+        
+        if self.i == self.len:
             raise IndexError
+        else:
+            res = self.items[self.i]
+            self.i += 1
+            
+            return res
+       
 
     def shift(self):
         self.i -= 1
@@ -324,16 +327,19 @@ class Cutsaw(MutableMapping[CutsawElement, int]):
         """
         if len(self) == 0:
             return None
-        best = None
-        for el in self:
-            if el.store_board in store_boards:
-                res = el.get_best_stack(boards)
-                if len(res):
-                    continue
-                else:
-                    if not best:
-                        best = res
-                    if best and best[0].remain > res[0].remain:
-                        best = res
-
-        return best
+        
+        from multiprocessing import cpu_count
+        
+        sub_args = [(self, el, boards, store_boards) for el in self]
+        from multiprocessing.pool import Pool
+        with Pool(processes=cpu_count()) as pool:
+            results = pool.starmap(Cutsaw.sub_get_best, sub_args)
+            return min([x for x in results if x], key=lambda el: el[0].remain)
+            
+    def sub_get_best(self, el: CutsawElement, boards:BoardStack, store_boards:BoardStack):
+        if el.store_board in store_boards:
+            res = el.get_best_stack(boards)
+            if len(res) == 0:
+                return
+            else:
+                return res

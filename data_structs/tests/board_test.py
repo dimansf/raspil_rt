@@ -67,6 +67,7 @@ class BoardStackTests(unittest.TestCase, BoardStackMix):
     def test___contains__(self):
         bs1 = BoardStack([
             (self.base2, 43),
+           
         ])
         bs2 = BoardStack([
             (self.base2, 44),
