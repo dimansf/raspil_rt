@@ -1,4 +1,5 @@
 
+from copy import copy
 import json
 import os.path
 from data_structs.board import Board, BoardStack, BoardsWrapper
@@ -20,7 +21,7 @@ input_dict = {
 
 
 out = os.path.join(os.path.dirname(__file__),
-                   f'out/out_{datetime.now().isoformat()}.json')
+                   f'out/out_{datetime.now().strftime("%d_%m_%Y_%H_%M_%S")}.json')
 
 time_log = os.path.join(os.path.dirname(__file__), 'out/time.txt')
 
@@ -28,7 +29,7 @@ time_log = os.path.join(os.path.dirname(__file__), 'out/time.txt')
 class MainTests(unittest.TestCase):
 
     def setUp(self):
-        self.data_path = input_dict['small']
+        self.data_path = input_dict['big']
         self.out = out
         self.t = TimeCounter(str(time_log))
         self.data = json.loads(open(self.data_path).read())
@@ -46,7 +47,7 @@ class MainTests(unittest.TestCase):
 
     def test_main(self):
         self.t.mark('prog')
-        # self.program.main()
+        self.program.main()
         self.t.mark('prog')
         self.t.write()
         with open(self.out, 'w') as f:
@@ -64,14 +65,19 @@ class MainTests(unittest.TestCase):
         res = self.program.calculate_per_boards(boards[keys[1]] , store_boards[keys[1]])
         self.program.calculate_per_id(boards, store_boards)
         self.assertEqual(len(res), 4)
-    def test_select_and_subtract(self):
-        pass    
+       
                 
     def test_select_and_subtract(self):
         boards, store_boards = self.program.to_order_boards_by_id([1,2,3,4,5])
         keys = list(boards.keys())
         res = self.program.calculate_per_boards(boards[keys[1]] , store_boards[keys[1]])
-        self.assertEqual(len(res), 4)
+        old_b = copy(self.program.boards)
+        old_sb = copy(self.program.store_boards)
+        res = self.program.select_and_subtract(res)
+        diff = old_b - self.program.boards#type:ignore
+        diff2 = old_sb - self.program.store_boards #type:ignore
+        
+        self.assertEqual(len(res), 1)
 
     def test_calculate_per_boards(self):
         store_boards = BoardStack([

@@ -36,7 +36,7 @@ class Program:
 
         self.resulted_cutsaw = Cutsaw()
 
-    def main(self, test_round: int = 5):
+    def main(self, test_round: int = 6):
 
         for stores in self.priority_map:
             self.iteration(stores)
@@ -63,12 +63,7 @@ class Program:
     def calculate_per_id(self, boards_by_id: dict[int, BoardStack],
                          store_boards_by_id: dict[int, BoardStack]) -> Cutsaw:
         """
-         На данном этапе получаем лучший Cutsaw по одной доске от каждого Id
-         {
-             [board_with_id1: [BoardStack]] : 1,
-             [board_with_id2: [BoardStack]] : 1,
-             ...
-         } 
+         
         """
         results = Cutsaw()
         for (board_id, boards) in boards_by_id.items():

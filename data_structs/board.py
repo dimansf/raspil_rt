@@ -35,7 +35,8 @@ class Board():
 
     def __str__(self) -> str:
         return f'[{self.num_id}, {self.len}, {self.sclad_id}, 0, {self.min_remain}, {self.max_remain}]'
-
+    def str(self, amount:int) -> str:
+        return f'[{self.num_id}, {self.len}, {self.sclad_id}, {amount}, {self.min_remain}, {self.max_remain}]'
     def __eq__(self, other: 'Board') -> bool:  # type:ignore
         return self._id == other._id
 
@@ -132,7 +133,7 @@ class BoardStack(dict[Board, int]):
         return self
 
     def __str__(self) -> str:
-        return '\n[ ' + ','.join([str(el) for el in sorted(self, key=lambda el: hash(el))]) + '] '
+        return '[ ' + ','.join([el.str(self[el]) for el in self]) + ']'
 
     def __copy__(self):
         return BoardStack(list(self.items()), self.remain)
@@ -222,10 +223,10 @@ class CutsawElement(List[BoardStack]):
 
         return self
 
-    def __str__(self: 'CutsawElement') -> str:
+    def str(self: 'CutsawElement', amount:int) -> str:
 
-        return '\n {' + f' {self.store_board}: [' \
-            + ','.join([str(el) for el in self]) + ']}'
+        return '\n { " store_board":' + f' {self.store_board.str(amount)},' \
+           +f'"amount":{amount},' +'"boards":[' + ','.join([str(el) for el in self]) + ']}'
 
 
 class Cutsaw(MutableMapping[CutsawElement, int]):
@@ -313,7 +314,7 @@ class Cutsaw(MutableMapping[CutsawElement, int]):
         return len(self.elements)
 
     def __str__(self):
-        return '{' + ','.join([f'{x}: {self[x]}' for x in self]) + '}'
+        return '[' +  ','.join([ f'{x.str(self[x])}' for x in self]) + ']'
 
     def get_best_cutsaw_elements(self,  boards:  BoardStack, store_boards: BoardStack):
         """
@@ -334,12 +335,15 @@ class Cutsaw(MutableMapping[CutsawElement, int]):
         from multiprocessing.pool import Pool
         with Pool(processes=cpu_count()) as pool:
             results = pool.starmap(Cutsaw.sub_get_best, sub_args)
-            return min([x for x in results if x], key=lambda el: el[0].remain)
+            try:
+                return min([x for x in results if x], key=lambda el: el[0].remain)
+            except:
+                return None
             
     def sub_get_best(self, el: CutsawElement, boards:BoardStack, store_boards:BoardStack):
         if el.store_board in store_boards:
             res = el.get_best_stack(boards)
             if len(res) == 0:
-                return
+                return None
             else:
                 return res
