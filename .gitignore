@@ -11,3 +11,8 @@ tests/2
 tests/2_2
 tests/2_simple
 tests/22
+tests/out1.txt
+tests/out.txt
+tests/out/out*.json
+
+tests/*/time.txt

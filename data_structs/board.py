@@ -179,12 +179,18 @@ class CutsawElement(List[BoardStack]):
     @property
     def length(self):
         return sum([el.total_len for el in self])
+    @property
+    def total_amount(self):
+        return sum([el.amount for el in self])
+
 
     def __eq__(self, other: 'CutsawElement') -> bool:  # type:ignore
         if self.store_board == other.store_board and \
                 len(self) == len(other) and \
-                self.length == other.length:
-
+                self.length == other.length and \
+                self.total_amount == other.total_amount:
+            if len(self) > 100:
+                return True
             for el in self:
                 eq = False
                 for el2 in other:
@@ -275,13 +281,13 @@ class Cutsaw(MutableMapping[CutsawElement, int]):
             def __init__(self, source: Cutsaw) -> None:
                 super().__init__()
                 self.s = source
-                self.keys = list(source.elements.keys())
+                self.keys = list(source.elements.values())
                 self.i = -1
 
             def __next__(self) -> CutsawElement:
                 try:
                     self.i += 1
-                    return self.s.elements[self.keys[self.i]]
+                    return self.keys[self.i]
                 except IndexError:
                     if self.i < len(self.s.elements):
                         raise IncorrectIteration

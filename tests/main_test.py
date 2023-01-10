@@ -2,7 +2,7 @@
 from copy import copy
 import json
 import os.path
-from data_structs.board import Board, BoardStack, BoardsWrapper
+from raspil_rt.data_structs.board import Board, BoardStack, BoardsWrapper
 
 from raspil_rt.convertation import TimeCounter, convertation_for_program
 
@@ -47,7 +47,7 @@ class MainTests(unittest.TestCase):
 
     def test_main(self):
         self.t.mark('prog')
-        self.program.main()
+        self.program.iteration([1])
         self.t.mark('prog')
         self.t.write()
         with open(self.out, 'w') as f:
@@ -57,7 +57,13 @@ class MainTests(unittest.TestCase):
         pass
 
     def test_iteration(self):
-        pass
+        self.t.mark('prog')
+        self.program.iteration([1])
+        self.t.mark('prog')
+        self.t.write()
+        with open(self.out, 'w') as f:
+            f.write(str(self.program.resulted_cutsaw))
+
 
     def test_calculate_per_id(self):
         boards, store_boards = self.program.to_order_boards_by_id([1,2,3,4,5])
