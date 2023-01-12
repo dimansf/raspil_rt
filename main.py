@@ -1,5 +1,7 @@
-from raspil_rt.data_structs.board import Board, BoardStack, Cutsaw, CutsawElement, BoardsWrapper
-from multiprocessing import  cpu_count
+from typing import Callable
+from raspil_rt.data_structs.board import Board, BoardStack, Cutsaw, CutsawElement, BoardsWrapper, BoardStackSet
+from multiprocessing import cpu_count
+from multiprocessing.pool import Pool
 
 class Program:
     """
@@ -25,17 +27,20 @@ class Program:
                  optimize_map: dict[int, bool], priority_map: list[list[int]], width_saw: int = 4):
         self.src_boards = boards
         self.src_store_boards = store_boards
-        self.boards = BoardStack(
-            [(Board(*x), x[3]) for x in boards if x[3] > 0])
-        self.store_boards: BoardStack = BoardStack(
-            [(Board(*x), x[3]) for x in store_boards if x[3] > 0])
+        bs1 = BoardStackSet(
+            [(Board(*x), x[3]) for x in boards if x[3] > 0]).res
+        self.boards = BoardStack(bs1)
+        bs2 = BoardStackSet(
+            [(Board(*x), x[3]) for x in store_boards if x[3] > 0]).res
+        self.store_boards: BoardStack = BoardStack(bs2)
         self.optimize_map = optimize_map
         self.priority_map = priority_map
-        self.num_proc=  cpu_count()
+        self.num_proc = cpu_count()
         self.width_saw = width_saw
 
         self.resulted_cutsaw = Cutsaw()
-
+    def setCallcaback(self, f:Callable[[Cutsaw], None]):
+        self.on_reaction = f
     def main(self, test_round: int = 6):
 
         for stores in self.priority_map:
@@ -50,44 +55,55 @@ class Program:
         возвращаем положительное значение если добавлены новые распилы
         при ложном значении не удалось найти оптимальный распил
         """
-        # разбить доски на группы по ид
+        ids  = list( set([el.num_id for el in self.boards]))        
 
-        boards, s_boards = self.to_order_boards_by_id(sclad_id)
-        self.current_sclad_id = sclad_id
-
-        sub_result = self.calculate_per_id(boards, s_boards)
-
-        self.resulted_cutsaw += sub_result
+        with Pool(processes=self.num_proc) as pool:
+            input_vals = [(self, sclad_id  ,idd)
+                          for idd in ids]
+            results = pool.starmap(Program.calculate, input_vals)
+        for result, boards, store_boards  in results:
+            self.resulted_cutsaw += result
+            self.boards -= self.boards  - boards
+            self.store_boards -= self.store_boards - store_boards
+                
         return
 
-    def calculate_per_id(self, boards_by_id: dict[int, BoardStack],
-                         store_boards_by_id: dict[int, BoardStack]) -> Cutsaw:
+    def calculate(self, sclad_id: list[int], idd:int) -> tuple[Cutsaw, BoardStack, BoardStack]:
         """
-         
+
         """
-        results = Cutsaw()
-        for (board_id, boards) in boards_by_id.items():
-
-            # 1. просчитать потенциально возможные комбинации
-            results  += self.calculate_per_boards(
-                boards, store_boards_by_id[board_id])
-        return self.select_and_subtract(results)
-
-    def select_and_subtract(self, boards_cutsaw:Cutsaw):
-            # 2. выделить лучший распил и произвести вычитание
-        results = Cutsaw()
         
-        while (True):
-            res = boards_cutsaw.get_best_cutsaw_elements(
-                self.boards, self.store_boards)
-            if res:
-                self.boards -= res[0]
-                self.store_boards -= (res.store_board, 1) 
+        results = Cutsaw()
+        f_boards = self.boards.filter(idd)
+        f_store_boards = self.store_boards.filter(idd,sclad_id)
+        
+        while True:
+            boards, store_boards = (f_boards.filter(idd), f_store_boards.filter(idd,sclad_id))
+            # 1. просчитать потенциально возможные комбинации
+            res = self.calculate_per_boards(
+                boards, store_boards)
+            res, f_boards, f_store_boards = self.select_and_subtract(res, boards, store_boards)
+            if len(results):
                 results += res
-                
             else:
                 break
-        return results
+
+        return (results, f_boards, f_store_boards)
+
+    def select_and_subtract(self, boards_cutsaw: Cutsaw, boards:BoardStack, store_boards:BoardStack):
+        # 2. выделить лучший распил и произвести вычитание
+        results = Cutsaw()
+
+        while (True):
+            res = boards_cutsaw.get_best_cutsaw_elements(
+               boards, store_boards)
+            if res and res.last_best:
+                boards -= res.last_best
+                store_boards -= (res.store_board,1)
+                results += CutsawElement(res.store_board, [res.last_best])
+            else:
+                break
+        return (results, boards, store_boards)
 
     def calculate_per_boards(self, boards: BoardStack, store_boards: BoardStack) -> Cutsaw:
         '''
@@ -95,24 +111,22 @@ class Program:
         - есть возможность распараллелить
         '''
 
-        from multiprocessing.pool import Pool
+       
         with Pool(processes=self.num_proc) as pool:
-            input_vals = [(self, BoardsWrapper(boards), store_board)
+            input_vals = [(self, BoardsWrapper(boards), store_board, CutsawElement(store_board))
                           for store_board in store_boards]
             results = pool.starmap(Program.combinate, input_vals)
 
-        res = Cutsaw([(res, 1) for res in results if len(res)>0])
+        res = Cutsaw([(res, 1) for res in results if len(res) > 0])
 
         return res
 
     def combinate(self,  boards: BoardsWrapper, store_board: Board,
-                  current_stack: BoardStack = BoardStack()) -> CutsawElement:
+                  current_best: CutsawElement, current_stack: BoardStack = BoardStack()):
         try:
             iteration_board, amount = boards.pop()
         except IndexError:
-            return CutsawElement(store_board)
-
-        el_cutsaw = CutsawElement(store_board)
+            return current_best
 
         for i in range(amount + 1):
             remain = self.cutsaw_condition(
@@ -124,19 +138,19 @@ class Program:
                 if i > 0:
                     good_stack = current_stack + (iteration_board, i)
                     good_stack.remain = remain
-                    el_cutsaw.append(good_stack)
 
-                el_cutsaw += self.combinate(boards, store_board, good_stack)
+                    current_best.add_best(good_stack)
+                self.combinate(boards, store_board,  current_best, good_stack)
 
         boards.shift()
-        return el_cutsaw
+        return current_best
 
     def cutsaw_condition(self, current_stack: BoardStack, board: Board, amount: int, store_board: Board):
         # 1. фаза проверки на возможность распила
         total_saw_width = (current_stack.amount + amount) * self.width_saw
         total_len = current_stack.total_len + amount * board.len + total_saw_width
         remain = store_board.len + self.width_saw - total_len
-        
+
         if remain > store_board.len + self.width_saw:
             raise RemainError()
         if remain < 0:
@@ -151,17 +165,7 @@ class Program:
         else:
             return remain
 
-    def to_order_boards_by_id(self, included_sclads: list[int] = []):
-        boards_by_id: dict[int, BoardStack] = {}
-        store_boards_by_id: dict[int, BoardStack] = {}
-        ids = set([x.num_id  for x in self.boards])
-        for id in ids:
-            boards_by_id[id] = BoardStack(
-                [(x, self.boards[x]) for x in self.boards if x.num_id == id])
-            store_boards_by_id[id] = BoardStack(
-                [(x, self.store_boards[x]) for x in self.store_boards if x.num_id ==
-                 id and x.sclad_id in included_sclads])
-        return (boards_by_id, store_boards_by_id)
+ 
 
 
 class RemainError(Exception):

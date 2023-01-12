@@ -44,6 +44,26 @@ class BoardStackMix:
     ], remain=500)
 
 
+class BoardSet(unittest.TestCase, BoardStackMix):
+
+    def setUp(self):
+        self.src = [
+            (Board(2, 200, 0), 10),
+               (Board(2, 200, 0), 10),
+               (Board(3, 200, 0), 10),
+               (Board(3, 200, 0), 10),
+               ]
+
+    def tearDown(self):
+        pass
+
+    def test___isub__(self):
+        pass
+
+    def test___init__(self):
+       self.assertEqual(len(BoardStackSet(self.src)), 2)
+
+
 class BoardStackTests(unittest.TestCase, BoardStackMix):
 
     def setUp(self):

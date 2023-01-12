@@ -15,4 +15,6 @@ tests/out1.txt
 tests/out.txt
 tests/out/out*.json
 
-tests/*/time.txt
+
+tests/out/out*.txt
+tests/out/time.txt

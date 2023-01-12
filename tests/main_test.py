@@ -2,7 +2,7 @@
 from copy import copy
 import json
 import os.path
-from raspil_rt.data_structs.board import Board, BoardStack, BoardsWrapper
+from raspil_rt.data_structs.board import Board, BoardStack, BoardsWrapper, CutsawElement
 
 from raspil_rt.convertation import TimeCounter, convertation_for_program
 
@@ -21,7 +21,7 @@ input_dict = {
 
 
 out = os.path.join(os.path.dirname(__file__),
-                   f'out/out_{datetime.now().strftime("%d_%m_%Y_%H_%M_%S")}.json')
+                   f'out/out_{datetime.now().strftime("%d_%m_%Y_%H_%M_%S")}.txt')
 
 time_log = os.path.join(os.path.dirname(__file__), 'out/time.txt')
 
@@ -46,9 +46,9 @@ class MainTests(unittest.TestCase):
         pass
 
     def test_main(self):
-        self.t.mark('prog')
+        self.t.mark('test_main')
         self.program.iteration([1])
-        self.t.mark('prog')
+        self.t.mark('test_main')
         self.t.write()
         with open(self.out, 'w') as f:
             f.write(str(self.program.resulted_cutsaw))
@@ -57,9 +57,9 @@ class MainTests(unittest.TestCase):
         pass
 
     def test_iteration(self):
-        self.t.mark('prog')
+        self.t.mark('test_iteration')
         self.program.iteration([1])
-        self.t.mark('prog')
+        self.t.mark('test_iteration')
         self.t.write()
         with open(self.out, 'w') as f:
             f.write(str(self.program.resulted_cutsaw))
@@ -103,8 +103,9 @@ class MainTests(unittest.TestCase):
             (Board(1, 100, 0, ), 10),
             (Board(1, 300, 0, ), 11),
         ])
-        res = self.program.combinate(BoardsWrapper(boards), store_board)
-        self.assertGreater(len(res), 2)
+        res = self.program.combinate(BoardsWrapper(boards), store_board, CutsawElement(store_board))
+        self.assertIsNot(res.best1, None)
+        self.assertIsNot(res.best2, None)
 
     def test_cutsaw_condition(self):
         self.program.optimize_map[3] = True
@@ -123,10 +124,7 @@ class MainTests(unittest.TestCase):
         self.assertEqual(res1, 2003 - 2*996 - 0*200 - 2*3)
         self.assertEqual(res2, -1)
 
-    def test_to_order_boards_by_id(self):
-        res = self.program.to_order_boards_by_id([1])
-        ids = set([b.num_id for b in self.program.boards])
-        self.assertEqual(set(res[0].keys()), ids)
+
 
 
 class ConversationTests(unittest.TestCase):

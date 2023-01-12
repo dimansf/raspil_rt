@@ -35,13 +35,42 @@ class Board():
 
     def __str__(self) -> str:
         return f'[{self.num_id}, {self.len}, {self.sclad_id}, 0, {self.min_remain}, {self.max_remain}]'
-    def str(self, amount:int) -> str:
+
+    def str(self, amount: int) -> str:
         return f'[{self.num_id}, {self.len}, {self.sclad_id}, {amount}, {self.min_remain}, {self.max_remain}]'
-    def __eq__(self, other: 'Board') -> bool:  # type:ignore
+
+    def __eq__(self, other: 'Board') -> bool:  # type: ignore[override]
         return self._id == other._id
+
+    def is_same_board(self, other: 'Board'):
+        return self.len == other.len and self.num_id == other.num_id and self.sclad_id == other.sclad_id
 
     def __hash__(self) -> int:
         return self._id
+
+
+class BSE():
+    def __init__(self, b: Board, a: int) -> None:
+        self.board = b
+        self.amount = a
+
+
+class BoardStackSet(list[BSE]):
+    def __init__(self, seq: list[tuple[Board, int]] = []):
+        super().__init__()
+        self.fill(seq)
+
+    def fill(self, seq: list[tuple[Board, int]] = []):
+        for s in seq:
+            finded = False
+            for el in self:
+                if s[0].is_same_board(el.board):
+                    finded = True
+                    el.amount += s[1]
+                    break
+            if not finded:
+                self.append(BSE(s[0], s[1]))
+        self.res = [(el.board, el.amount) for el in self]
 
 
 class BoardStack(dict[Board, int]):
@@ -67,7 +96,7 @@ class BoardStack(dict[Board, int]):
         '''Вся длина палок в стаке'''
         return sum([b.len * self[b] for b in self])
 
-    def __contains__(self, other: Union['BoardStack', Board],  # type:ignore
+    def __contains__(self, other: Union['BoardStack', Board],  # type: ignore[override]
                      amount: int = 1) -> bool:
         '''Подмножество other входит в множество self'''
         if isinstance(other, Board):
@@ -84,7 +113,10 @@ class BoardStack(dict[Board, int]):
                 return False
         return True
 
-    def __eq__(self, other: 'BoardStack') -> bool:  # type:ignore
+    def filter(self, idd: int, sclads: list[int] = [0]):
+        return BoardStack([(x, self[x]) for x in self if x.num_id == idd and x.sclad_id in sclads])
+
+    def __eq__(self, other: 'BoardStack') -> bool:  # type: ignore[override]
         '''Проверка на то что два стака равны по набору'''
         try:
             if self.remain == other.remain and self.amount == other.amount \
@@ -104,7 +136,7 @@ class BoardStack(dict[Board, int]):
         return s
 
     def __isub__(self, other: Union['BoardStack', tuple[Board, int]]) -> 'BoardStack':
-        
+
         self.__add__(other, False, True)
         return self
 
@@ -146,15 +178,14 @@ class BoardsWrapper:
         self.items = list(target.items())
 
     def pop(self) -> tuple[Board, int]:
-        
+
         if self.i == self.len:
             raise IndexError
         else:
             res = self.items[self.i]
             self.i += 1
-            
+
             return res
-       
 
     def shift(self):
         self.i -= 1
@@ -171,7 +202,9 @@ class CutsawElement(List[BoardStack]):
         self.store_board = store_board
         self.extend(seq)
         self.sorted: List[BoardStack] | None = None
-        self.last_best: CutsawElement | None = None
+        self.last_best: BoardStack | None = None
+        self.best1 = BoardStack()
+        self.best2 = BoardStack()
 
     def __copy__(self):
         return CutsawElement(self.store_board, [copy(x) for x in self])
@@ -179,12 +212,12 @@ class CutsawElement(List[BoardStack]):
     @property
     def length(self):
         return sum([el.total_len for el in self])
+
     @property
     def total_amount(self):
         return sum([el.amount for el in self])
 
-
-    def __eq__(self, other: 'CutsawElement') -> bool:  # type:ignore
+    def __eq__(self, other: 'CutsawElement') -> bool:  # type: ignore[override]
         if self.store_board == other.store_board and \
                 len(self) == len(other) and \
                 self.length == other.length and \
@@ -206,33 +239,52 @@ class CutsawElement(List[BoardStack]):
     def sort_stacks(self):
         self.sorted = sorted(self, key=lambda bs: bs.remain)
 
-    def get_best_stack(self, condition: BoardStack = BoardStack()):
-        if self.last_best and self.last_best[0] in condition:
-            return self.last_best
-        best = None
-        if not self.sorted:
-            self.sort_stacks()
-        for el in self.sorted:  # type:ignore
-            if el in condition:
-                if best and el.remain < best.remain:
-                    best = el
-                if best is None:
-                    best = el
-        if best:
-            self.last_best = CutsawElement(self.store_board, [best])
-            return self.last_best
-        return CutsawElement(self.store_board)
+    def add_best(self, el: BoardStack):
+        if el.remain == -1:
+            return
+        if self.best1.remain == -1:
+            self.best1 = el
+            return
+        if self.best2.remain == -1:
+            self.best2 = el
+            return
+        if max(self.best2.remain, self.best1.remain) > el.remain:
+            if self.best2.remain > self.best1.remain:
+                self.best2 = el
+            else:
+                self.best1 = el
 
-    def __iadd__(self, __x: 'CutsawElement'):  # type:ignore
+    def get_best_stack(self, condition: BoardStack = BoardStack()):
+
+        b1 = self.best1 if self.best1.remain != -1 else None
+        b2 = self.best2 if self.best2.remain != -1 else None
+
+        if b1 and b2:
+            br1 = b1 in condition
+            br2 = b2 in condition
+            if br1 and br2:
+                self.last_best = b1 if b1.remain < b2.remain and br1 else b2
+                return self
+            if br1 or br2:
+                self.last_best = b1 if br1 else b2
+                return self
+        if b1 or b2:
+            b = b1 if b1 else b2
+            self.last_best = b if b and b in condition else None
+            if self.last_best: return self
+        return None
+
+    def __iadd__(self, __x: 'CutsawElement'):  # type: ignore[override]
 
         super().__iadd__(__x)
 
         return self
 
-    def str(self: 'CutsawElement', amount:int) -> str:
+    def str(self: 'CutsawElement', amount: int) -> str:
 
         return '\n { " store_board":' + f' {self.store_board.str(amount)},' \
-           +f'"amount":{amount},' +'"boards":[' + ','.join([str(el) for el in self]) + ']}'
+            + f'"amount":{amount},' + \
+            '"boards":[' + ','.join([str(el) for el in self]) + ']}'
 
 
 class Cutsaw(MutableMapping[CutsawElement, int]):
@@ -320,7 +372,7 @@ class Cutsaw(MutableMapping[CutsawElement, int]):
         return len(self.elements)
 
     def __str__(self):
-        return '[' +  ','.join([ f'{x.str(self[x])}' for x in self]) + ']'
+        return '[' + ','.join([f'{x.str(self[x])}' for x in self]) + ']'
 
     def get_best_cutsaw_elements(self,  boards:  BoardStack, store_boards: BoardStack):
         """
@@ -332,24 +384,12 @@ class Cutsaw(MutableMapping[CutsawElement, int]):
                  [board: [BoardStack]] : 1
              }
         """
-        if len(self) == 0:
-            return None
-        
-        from multiprocessing import cpu_count
-        
-        sub_args = [(self, el, boards, store_boards) for el in self]
-        from multiprocessing.pool import Pool
-        with Pool(processes=cpu_count()) as pool:
-            results = pool.starmap(Cutsaw.sub_get_best, sub_args)
-            try:
-                return min([x for x in results if x], key=lambda el: el[0].remain)
-            except:
-                return None
-            
-    def sub_get_best(self, el: CutsawElement, boards:BoardStack, store_boards:BoardStack):
-        if el.store_board in store_boards:
+        best = None
+        stores = [el for el in self if el.store_board in store_boards]
+        for el in stores:
             res = el.get_best_stack(boards)
-            if len(res) == 0:
-                return None
-            else:
-                return res
+            if res and not best:
+                best = res
+            if res and best and best.last_best and res.last_best and res.last_best.remain < best.last_best.remain:
+                best = res
+        return best
