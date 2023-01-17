@@ -13,13 +13,13 @@
     "python.analysis.reportMissingTypeStubs": "false",
     
     "python.linting.pylintEnabled": true,
-    "python.autoComplete.extraPaths": ["C:\\Users\\dimansf\\Documents\\coding"],
+    "python.autoComplete.extraPaths": ["C:\\Users\\dimansf\\Documents\\"],
     "python.linting.pylintArgs": [
     "--enable=W0614"
 ],
 
 "python.linting.enabled": false,
 "python.analysis.extraPaths": [
-    "C:\\Users\\dimansf\\Documents\\coding"
+    "C:\\Users\\dimansf\\Documents\\"
 ]
 }

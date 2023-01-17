@@ -21,7 +21,7 @@ input_dict = {
 
 
 out = os.path.join(os.path.dirname(__file__),
-                   f'out/out_{datetime.now().strftime("%d_%m_%Y_%H_%M_%S")}.txt')
+                   f'out/temp/out_{datetime.now().strftime("%d_%m_%Y_%H_%M_%S")}.txt')
 
 time_log = os.path.join(os.path.dirname(__file__), 'out/time.txt')
 
@@ -74,7 +74,7 @@ class MainTests(unittest.TestCase):
        
                 
     def test_select_and_subtract(self):
-        boards, store_boards = self.program.to_order_boards_by_id([1,2,3,4,5])
+        
         keys = list(boards.keys())
         res = self.program.calculate_per_boards(boards[keys[1]] , store_boards[keys[1]])
         old_b = copy(self.program.boards)
