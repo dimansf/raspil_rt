@@ -44,24 +44,21 @@ class BoardStackMix:
     ], remain=500)
 
 
-class BoardSet(unittest.TestCase, BoardStackMix):
+class BoardStackSetTests(unittest.TestCase, BoardStackMix):
 
     def setUp(self):
         self.src = [
             (Board(2, 200, 0), 10),
-               (Board(2, 200, 0), 10),
-               (Board(3, 200, 0), 10),
-               (Board(3, 200, 0), 10),
-               ]
+            (Board(2, 200, 0), 10),
+            (Board(3, 200, 0), 10),
+            (Board(3, 200, 0), 10),
+        ]
 
     def tearDown(self):
         pass
 
-    def test___isub__(self):
-        pass
-
     def test___init__(self):
-       self.assertEqual(len(BoardStackSet(self.src)), 2)
+        self.assertEqual(len(BoardStackSet(self.src)), 2)
 
 
 class BoardStackTests(unittest.TestCase, BoardStackMix):
@@ -87,7 +84,7 @@ class BoardStackTests(unittest.TestCase, BoardStackMix):
     def test___contains__(self):
         bs1 = BoardStack([
             (self.base2, 43),
-           
+
         ])
         bs2 = BoardStack([
             (self.base2, 44),
@@ -156,7 +153,7 @@ class BoardsWrapperTests(unittest.TestCase, BoardStackMix):
         self.assertEqual(self.bw.pop()[0], list(self.board_stack.keys())[0])
 
 
-class ElementCutsawTests(unittest.TestCase, BoardStackMix):
+class CutsawElementTests(unittest.TestCase, BoardStackMix):
     def setUp(self):
         self.ec = CutsawElement(Board(1, 2000, 3, 1, 200, 600), [
             BoardStack([
@@ -165,13 +162,12 @@ class ElementCutsawTests(unittest.TestCase, BoardStackMix):
             ], remain=500),
             BoardStack([
                 (Board(1, 100, 0), 4),
-                (Board(1, 200, 0), 4)
+                (Board(1, 200, 0), 4),
+                (Board(1, 200, 0), 5)
             ], remain=800),
-            BoardStack([
-                (Board(1, 100, 0), 2),
-                (Board(1, 200, 0), 2)
-            ], remain=1400),
+           
         ])
+        
 
     def tearDown(self):
         pass
@@ -179,32 +175,30 @@ class ElementCutsawTests(unittest.TestCase, BoardStackMix):
     def test___init__(self):
         pass
 
-    def test_length(self):
-        pass
+    def test___eq__(self):
+        self.ec.last_best = self.ec[1]
+        self.assertEqual(self.ec, copy(self.ec))
 
-    def test_sort_stacks(self):
-        self.ec.sort_stacks()
-        if self.ec.sorted:
-            self.assertLess(self.ec.sorted[0].remain, self.ec.sorted[1].remain)
 
     def test_get_best_stack(self):
-        res = self.ec.get_best_stack(self.ec[1])
+        self.ec.get_best_stack(self.ec[1])
 
-        
-        self.assertEqual(res.last_best.remain, self.ec[1].remain) #type:ignore
+        self.assertEqual(self.ec.last_best.remain,# type:ignore[remain]
+                         self.ec[1].remain)  
+        self.ec.get_best_stack()
+        self.assertEqual(self.ec.last_best, None)
 
     def test___iadd__(self):
         pass
 
     def test___str__(self):
-        s = str(self.ec)
+        s = self.ec.str(1)
         self.assertNotIn('object at', s)
 
     def test___copy__(self):
         pass
 
-    def test___eq__(self):
-        self.assertEqual(self.ec, copy(self.ec))
+ 
 
 
 class CutsawMix():
@@ -216,13 +210,14 @@ class CutsawMix():
     el2 = CutsawElement(Board(1, 6000, 4, 1, 200, 1200), [
         BoardStack([(Board(1, 2000, 0), 2), (Board(1, 200, 0), 9)]),
         BoardStack([(Board(1, 2000, 0), 1)]),
-        
+
     ])
+    el2.last_best = el2[0]
     el3 = CutsawElement(Board(1, 720, 3, 1, 200, 600),  [
         BoardStack([(Board(1, 100, 0), 4)]),
         BoardStack([(Board(1, 150, 0), 4), (Board(1, 100, 0), 1)])
     ])
-
+    el3.last_best = el3[1]
 
 class CutsawTests(unittest.TestCase, CutsawMix):
 
@@ -243,17 +238,15 @@ class CutsawTests(unittest.TestCase, CutsawMix):
         self.assertEqual(self.cut[self.el1], 1)
 
     def test___setitem__(self):
-        self.cut[self.el1]= 100
+        self.cut[self.el1] = 100
         self.assertEqual(self.cut[self.el1], 100)
 
     def test___delitem__(self):
         pass
 
-
     def test___iter__(self):
-        it =iter(self.cut)
+        it = iter(self.cut)
         self.assertEqual(next(it), self.el1)
-            
 
     def test___str__(self):
         s = str(self.cut)
@@ -270,14 +263,9 @@ class CutsawTests(unittest.TestCase, CutsawMix):
         cut2[self.el2] = 100
         self.assertNotEquals(cut2[self.el2], self.cut[self.el2])
 
- 
-
     def test___add__(self):
         cut2 = self.cut + self.cut
         self.assertEqual(cut2[self.el2],  self.cut[self.el2]*2)
-
-
-
 
 
 if __name__ == '__main__':

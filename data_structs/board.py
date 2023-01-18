@@ -4,7 +4,6 @@ from typing import Any, Iterable, Iterator, List, Tuple,  Union
 from collections.abc import MutableMapping
 
 
-
 class IncorrectIteration(Exception):
     pass
 
@@ -44,7 +43,8 @@ class Board():
         return self._id == other._id
 
     def is_same_board(self, other: 'Board'):
-        return self.len == other.len and self.num_id == other.num_id and self.sclad_id == other.sclad_id
+        return self.len == other.len and self.num_id == other.num_id and\
+             self.sclad_id == other.sclad_id
 
     def __hash__(self) -> int:
         return self._id
@@ -198,54 +198,45 @@ class CutsawElement(List[BoardStack]):
     boards_combinations - набор досок комбинаций
     """
     array_size = 2
-    def __init__(self, store_board: Board, seq: Iterable[BoardStack] = []):
+
+    def __init__(self, store_board: Board, seq: Iterable[BoardStack] = [],
+                 lb: BoardStack | None = None):
         super().__init__()
         self.store_board = store_board
         self.extend(seq)
-        self.sorted: List[BoardStack] | None = None
-        self.last_best: BoardStack | None = None
-     
+
+        self.last_best: BoardStack | None = lb
 
     def __copy__(self):
-        return CutsawElement(self.store_board, [copy(x) for x in self])
-
-    @property
-    def length(self):
-        return sum([el.total_len for el in self])
-
-    @property
-    def total_amount(self):
-        return sum([el.amount for el in self])
+        return CutsawElement(self.store_board, [copy(x) for x in self],
+                             lb=self.last_best)
 
     def __eq__(self, other: 'CutsawElement') -> bool:  # type: ignore[override]
-        if self.store_board == other.store_board and \
-                self.last_best and other.last_best and\
-                self.last_best.remain == other.last_best.remain:
+        if self.store_board == other.store_board :
+
             return self.last_best == other.last_best
 
-            
         return False
-
-    def sort_stacks(self):
-        self.sorted = sorted(self, key=lambda bs: bs.remain)
 
     def add_best(self, other: BoardStack):
         if len(self) == CutsawElement.array_size:
-            
-            smallest = sorted(self, key=lambda el: el.remain - other.remain)[-1]
-            self[ self.index(smallest)] = other
+
+            smallest = sorted(
+                self, key=lambda el: el.remain - other.remain)[-1]
+            self[self.index(smallest)] = other
             return
         self.append(other)
-        
 
     def get_best_stack(self, condition: BoardStack = BoardStack()):
 
-        res = sorted([el for el in self if el in condition], key=lambda el: el.remain)
+        res = sorted([el for el in self if el in condition],
+                     key=lambda el: el.remain)
         try:
-            self.last_best = res[-1]
+            self.last_best = res[0]
             return self
         except IndexError:
-            return None
+            self.last_best = None
+            return self
 
     def __iadd__(self, __x: 'CutsawElement'):  # type: ignore[override]
 
@@ -257,7 +248,11 @@ class CutsawElement(List[BoardStack]):
 
         return '\n { " store_board":' + f' {self.store_board.str(amount)},' \
             + f'"amount":{amount},' + \
-            '"boards":[' + ','.join([str(el) for el in self]) + ']}'
+            '"boards":[' + f'{self.last_best}' \
+            if self.last_best else '' + ']}'
+    def __str__(self) -> str:   # type: ignore[override]
+        
+        raise NotImplemented()
 
 
 class Cutsaw(MutableMapping[CutsawElement, int]):
@@ -347,6 +342,8 @@ class Cutsaw(MutableMapping[CutsawElement, int]):
     def __str__(self):
         return '[' + ','.join([f'{x.str(self[x])}' for x in self]) + ']'
 
+
+class CutsawList(list[CutsawElement]):
     def get_best_cutsaw_elements(self,  boards:  BoardStack, store_boards: BoardStack):
         """
             Возращаем  CutsawElement с минимальным остатком
@@ -354,12 +351,12 @@ class Cutsaw(MutableMapping[CutsawElement, int]):
         remain_max = -1
 
         stores = [el for el in self if el.store_board in store_boards]
-        bests = sorted( [el.get_best_stack(boards) for el in stores], 
-               key=lambda el: el.last_best.remain if el and el.last_best else remain_max)
+        bests = sorted([el.get_best_stack(boards) for el in stores],
+                       key=lambda el: el.last_best.remain 
+                       if el and el.last_best else remain_max)
         try:
-            if bests[-1].last_best.remain == -1: #type:ignore[except]
-                return bests[-1]
-        except AttributeError or  IndexError:
+            return next(x for x in bests if x.last_best and\
+                 x.last_best.remain != -1)
+           
+        except (AttributeError , IndexError , StopIteration):
             return None
-            
-     

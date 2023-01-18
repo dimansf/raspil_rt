@@ -83,7 +83,7 @@ class MyTCPHandler(StreamRequestHandler):
         
         p = Process(target=handle_program, args=(data,name, config))
         
-        p.start()
+        p.start()list(list(r)[0])[1]
         processes.append(p)
         print(f'processes status {[x.exitcode for x in processes]}')
         

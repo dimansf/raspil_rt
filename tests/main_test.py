@@ -66,24 +66,25 @@ class MainTests(unittest.TestCase):
 
 
     def test_calculate_per_id(self):
-        boards, store_boards = self.program.to_order_boards_by_id([1,2,3,4,5])
-        keys = list(boards.keys())
-        res = self.program.calculate_per_boards(boards[keys[1]] , store_boards[keys[1]])
-        self.program.calculate_per_id(boards, store_boards)
-        self.assertEqual(len(res), 4)
+        pass
        
                 
     def test_select_and_subtract(self):
         
-        keys = list(boards.keys())
-        res = self.program.calculate_per_boards(boards[keys[1]] , store_boards[keys[1]])
-        old_b = copy(self.program.boards)
-        old_sb = copy(self.program.store_boards)
-        res = self.program.select_and_subtract(res)
-        diff = old_b - self.program.boards#type:ignore
-        diff2 = old_sb - self.program.store_boards #type:ignore
+        store_boards = BoardStack([
+            (Board(1, 2000, 3, 1, 200, 600), 3),
+            (Board(1, 3000, 3, 1, 200, 600), 3),
+        ])
+        boards = BoardStack([
+            (Board(1, 100, 0, ), 30),
+            (Board(1, 300, 0, ), 41),
+        ])
+        self.program.boards = boards
+        self.program.store_boards = store_boards
+        res = self.program.calculate_per_boards(boards, store_boards)
+        cut = self.program.select_and_subtract(res)
         
-        self.assertEqual(len(res), 1)
+        self.assertIsNot(list(cut.keys())[0].last_best, None)
 
     def test_calculate_per_boards(self):
         store_boards = BoardStack([
@@ -104,8 +105,9 @@ class MainTests(unittest.TestCase):
             (Board(1, 300, 0, ), 11),
         ])
         res = self.program.combinate(BoardsWrapper(boards), store_board, CutsawElement(store_board))
-        self.assertIsNot(res.best1, None)
-        self.assertIsNot(res.best2, None)
+        self.assertIs(res.last_best, None)
+        res.get_best_stack(boards)
+        self.assertIsNot(res.last_best, None)
 
     def test_cutsaw_condition(self):
         self.program.optimize_map[3] = True

@@ -7,7 +7,7 @@
 
 
 from time import perf_counter
-
+from pathlib import Path
 
 def convertation_for_program(boards:list[list[int]], store_boards:list[list[int]], 
 optimize:dict[str, bool]):
@@ -40,18 +40,22 @@ def load_simple_config(file:str) -> dict[str,str]:
     return d
 
 class TimeCounter(dict[str, list[float]]):
-    def __init__(self, path:str) -> None:
+    def __init__(self, path:Path) -> None:
         self.path = path
         self.inner_pair_counter:dict[str, int] = {}
    
-    def print(self, s:str):
-        with open(self.path, 'a') as f:
-            f.write(f'\n{s}')
+    def print(self):
+        self.print(str(self))
     
     def write(self):
-        self.print(str(self))
+        
+        with open(str(self.path), 'a') as f:
+            f.write(f'\n{self}')
                 
-    
+    def __str__(self) -> str:
+        return '{' + ',\n'.join([f'"{k }": {self[k]}' for k in self]) + '}'
+
+        
     def mark(self, name:str, flag:str=''):
         if self.inner_pair_counter.get(name, None) is None or\
             self.inner_pair_counter[name] % 2 == 0 :
@@ -70,6 +74,21 @@ class TimeCounter(dict[str, list[float]]):
                 s = sum(self[name])
                 self[name].clear()
                 self[name].append(s)
+    @staticmethod
+    def try_mark(name:str):
+        
+        def f(f):
+            def ff(*args):
+                self = args[0]
+                if.self.t:
+                    self.t.mark('name')
+                    res = f(*args)
+                    self.t.mark('name')
+                else:
+                    res =  f(*args)
+                return res
+            return ff
+        return f
 
             
 from typing import Callable
