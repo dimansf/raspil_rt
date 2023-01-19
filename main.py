@@ -1,4 +1,5 @@
 from copy import copy
+from socket import socket
 from typing import Callable
 from raspil_rt.data_structs.board import CutsawList
 from raspil_rt.data_structs.board import Board, BoardStack, Cutsaw, CutsawElement, BoardsWrapper, BoardStackSet
@@ -42,15 +43,17 @@ class Program:
         self.priority_map = priority_map
         self.num_proc = cpu_count()
         self.width_saw = width_saw
-        self.on_reaction: Callable[[Cutsaw], None] | None = None
+        self.on_reaction: socket | None = None
         CutsawElement.array_size = best_elements_arrray_size
         
         self.t:TimeCounter | None =  TimeCounter(log_path.joinpath(log_name)) if time_metric else None
        
         self.resulted_cutsaw = Cutsaw()
 
-    def setCallcaback(self, f: Callable[[Cutsaw], None]):
-        self.on_reaction = f
+    def setCallcaback(self, conn:socket):
+        
+            
+        self.on_reaction = conn
 
     def main(self, test_round: int = 6):
 
@@ -71,13 +74,13 @@ class Program:
         for _id in ids:
             
             res = self.calculate(sclads_id, _id)
-            
             if self.on_reaction:
-                self.on_reaction(res)
+                self.on_reaction.sendall(str(res).encode())
+                
             self.resulted_cutsaw += res
 
         return
-    # @TimeCounter.try_mark('calculate')
+    
     def calculate(self, sclad_id: list[int], _id: int):
         """
             Просчет заказов по каждой доске на складе

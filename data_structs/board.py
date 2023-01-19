@@ -248,8 +248,8 @@ class CutsawElement(List[BoardStack]):
 
         return '\n { " store_board":' + f' {self.store_board.str(amount)},' \
             + f'"amount":{amount},' + \
-            '"boards":[' + f'{self.last_best}' \
-            if self.last_best else '' + ']}'
+            '"boards":' + f'{self.last_best}' \
+            if self.last_best else '' + '}'
     def __str__(self) -> str:   # type: ignore[override]
         
         raise NotImplemented()

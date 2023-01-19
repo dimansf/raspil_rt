@@ -1,6 +1,7 @@
 # Модуль socketserver для сетевого программирования
 
-
+from sys import argv
+import socket
 import json
 from multiprocessing import Process
 
@@ -11,96 +12,92 @@ import random
 from pathlib import Path
 
 
-from socketserver import StreamRequestHandler, TCPServer
-
-
 from raspil_rt.convertation import load_simple_config
 
 
 from raspil_rt.main import Program
 
 
-from typing import Any
 from raspil_rt.convertation import convertation_for_program
 import traceback
 import os
 
 
+def handle_program(config: dict[str, str],
+                   conn: socket.socket):
+    data = ''
+    conn.settimeout(1.1)
+    try:
+        while 1:
+            data += conn.recv(1024).strip().decode()
+    except TimeoutError:
+        pass
+    print(data)
 
+    data = loads(data)
 
-def handle_program(data: dict[str, Any], name:str, config:dict[str,str]):
+    name = f'{bytes([random.randint(65, 90) for _ in range(100)]).decode()}.txt'
+
+    print('Имя отправлено')
+    conn.sendall(name.encode())
     boards, store_boards, optimize = \
         convertation_for_program(
             data['orders'], data['store'], data['optimize'])
 
     program = Program(boards, store_boards, optimize,
                       data['store_order'], int(data['width_saw']))
-    
+    program.setCallcaback(conn)
     try:
         program.main()
-        with open(os.path.join(config['out_path'], name), 'w') as f:
+        out_file = os.path.join(config['out_path'], name)
+        Path(config['out_path']).mkdir(parents=True, exist_ok=True)
+        with open(out_file, 'w') as f:
             f.write(str(program.resulted_cutsaw))
     except Exception as ex:
+        Path(config['log_file']).parent.mkdir(parents=True, exist_ok=True)
         with open(config['log_file'], 'w') as f:
             tb_str = traceback.format_exception(
                 type(ex), ex, tb=ex.__traceback__)
             f.write("".join(tb_str))
+    finally:
+        conn.sendall('%end%'.encode())
+        conn.close()
 
-def load_config():
+
+def load_config(path: str) -> dict[str, str]:
     try:
-        config_file = Path(__file__).parent.joinpath('config.txt')
+        config_file = Path(path)
         config = load_simple_config(str(config_file))
         return config
     except:
         raise Exception('Cant load config')
 
 
-
-config = load_config()
-addr = (config['localhost'], int(config['port']))
-
-
-processes:list[Process] = []
-
-class MyTCPHandler(StreamRequestHandler):
-
-    # функция handle делает всю работу, необходимую для обслуживания запроса.
-    # доступны несколько атрибутов: запрос доступен как self.request, адрес как self.client_address, экземпляр сервера как self.server
-    def handle(self):
-        data = ''
-        while 1:
-            data += self.request.recv(1024).strip().decode()
-            if '...///' in data:
-                break
-
-        print(data)
-        data = loads(data[:-6])
-
-        name = f'{bytes([random.randint(65, 90) for _ in range(100)]).decode()}.txt'
-
-        print('Имя отправлено')
-        self.request.sendall(name.encode())
-        
-        p = Process(target=handle_program, args=(data,name, config))
-        
-        p.start()list(list(r)[0])[1]
-        processes.append(p)
-        print(f'processes status {[x.exitcode for x in processes]}')
-        
-
-    def execute_new_process(self):
-        pass
+config = load_config(argv[1])
+addr = (config['host'], int(config['port']))
 
 
+processes: list[Process] = []
 
 
-def run_server(addr: tuple[str, int]):
+def run_serve(addr: tuple[str, int]):
 
     try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(addr)
+            s.listen(5)
+            while 1:
+                
+                conn, addr = s.accept()
+                
+                p = Process(target=handle_program, args=(config, conn))
 
-        print('starting server... for exit press Ctrl+C')
-        server = TCPServer(addr, MyTCPHandler)
-        server.serve_forever()
+                p.start()
+
+                processes.append(p)
+                print(f'processes status {[x.exitcode for x in processes]}')
+                print('Сервер ждет поключения')
+
     except Exception as e:
         with open('error.log', 'w+') as f:
             f.write(repr(e.with_traceback(None)))
@@ -108,20 +105,17 @@ def run_server(addr: tuple[str, int]):
         for p in processes:
             p.join()
 
+
 def is_port_in_use(port: int) -> bool:
     import socket
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(('localhost', port)) == 0
 
 
-
 if __name__ == "__main__":
-    print(json.dumps(config,sort_keys=True, indent=4))
+    print(json.dumps(config, sort_keys=True, indent=4))
     if not is_port_in_use(addr[1]):
-        run_server(addr)
-        
+        run_serve(addr)
+
     else:
         print('Port is not free.')
-
-
-    

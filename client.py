@@ -1,28 +1,28 @@
 
 
 
+from raspil_rt.convertation import load_simple_config
+
 import socket
-from raspil_rt.tests.main_test import  big_input,small1_input
+from sys import argv
 
-host = 'localhost'
-port = 9999
-addr = (host, port)
+conf = load_simple_config(argv[2])
+addr = (conf['host'], int(conf['port']))
 conn = socket.create_connection(addr)
-
-def data1():
-    with open(small1_input, 'r') as f:
+stop_code = '%end%'
+def data1(file:str):
+    
+    with open(file, 'r') as f:
         conn.send(f.read().encode())
-        conn.send('...///'.encode())
-def data3():
-    with open(big_input, 'r') as f:
-        conn.send(f.read().encode())
-        conn.send('...///'.encode())
+        
+        while 1:
+            res = conn.recv(1024).decode()
+            print(res)
+            if stop_code in res:
+                break
 
 
-def data_test():
-     conn.send('12345678..9'.encode())
+data1(argv[1])
 
-data3()
 
-print(f'name is {conn.recv(1024).strip().decode()}')
 conn.close()

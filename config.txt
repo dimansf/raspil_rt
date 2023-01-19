@@ -1,4 +1,4 @@
 out_path=C:\Users\dimansf\Documents\output\server
-localhost=localhost
+host=localhost
 port=9999
 log_file=C:\Users\dimansf\Documents\output\server\raspil_perror.txt
