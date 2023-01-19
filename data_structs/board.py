@@ -246,7 +246,7 @@ class CutsawElement(List[BoardStack]):
 
     def str(self: 'CutsawElement', amount: int) -> str:
 
-        return '\n { " store_board":' + f' {self.store_board.str(amount)},' \
+        return '\n { "store_board":' + f' {self.store_board.str(amount)},' \
             + f'"amount":{amount},' + \
             '"boards":' + f'{self.last_best}' \
             if self.last_best else '' + '}'
