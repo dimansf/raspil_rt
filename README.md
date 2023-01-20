@@ -20,7 +20,6 @@ client_file="C:\Users\user\Documents\raspil_rt\tests\resources\1960_testing.txt"
 PYTHONPATH=..\\
 ```
 
-```
 ## ID [0] type: int
 N 
 ## длина палок [1] type: int
