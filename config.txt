@@ -2,3 +2,6 @@ out_path=C:\Users\dimansf\Documents\output\server
 host=localhost
 port=9999
 log_file=C:\Users\dimansf\Documents\output\server\raspil_perror.txt
+config=C:\Users\dimansf\Documents\raspil_rt\config.txt
+client_file="C:\Users\dimansf\Documents\raspil_rt\tests\resources\1960_testing.txt"
+PYTHONPATH=..\\

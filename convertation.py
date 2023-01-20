@@ -11,6 +11,21 @@ from time import perf_counter
 from pathlib import Path
 
 
+def is_port_in_use(port: int) -> bool:
+    import socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(('localhost', port)) == 0
+
+
+def load_config(path: str) -> dict[str, str]:
+    try:
+        config_file = Path(path)
+        config = load_simple_config(str(config_file))
+        return config
+    except:
+        raise Exception('Cant load config')
+
+
 def convertation_for_program(boards: list[list[int]], store_boards: list[list[int]],
                              optimize: dict[str, bool]):
     '''
@@ -82,10 +97,6 @@ class TimeCounter(dict[str, list[float]]):
                 s = sum(self[name])
                 self[name].clear()
                 self[name].append(s)
-
-
-
-
 
 
 def perform_marking(f: Callable[[str, str], str]):

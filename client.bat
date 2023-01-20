@@ -1,3 +1,5 @@
-cd ../
-python -m raspil_rt.client C:\Users\dimansf\Documents\raspil_rt\tests\resources\small.json  C:\Users\dimansf\Documents\raspil_rt\config.txt
+call env.bat
+%ECHO ON
+python -m raspil_rt.client %client_file% %config%
+
 set /p asd="Hit enter to continue"

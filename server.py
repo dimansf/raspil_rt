@@ -1,27 +1,21 @@
-# Модуль socketserver для сетевого программирования
-
 from sys import argv
 import socket
 import json
 from multiprocessing import Process
-
 from json import loads
 import random
-
-
 from pathlib import Path
-
-
-from raspil_rt.convertation import load_simple_config
-
-
+from raspil_rt.convertation import is_port_in_use, load_config
 from raspil_rt.main import Program
-
-
 from raspil_rt.convertation import convertation_for_program
 import traceback
 import os
 
+
+
+config = load_config(argv[1])
+addr = (config['host'], int(config['port']))
+processes: list[Process] = []
 
 def handle_program(config: dict[str, str],
                    conn: socket.socket):
@@ -64,20 +58,9 @@ def handle_program(config: dict[str, str],
         conn.close()
 
 
-def load_config(path: str) -> dict[str, str]:
-    try:
-        config_file = Path(path)
-        config = load_simple_config(str(config_file))
-        return config
-    except:
-        raise Exception('Cant load config')
 
 
-config = load_config(argv[1])
-addr = (config['host'], int(config['port']))
 
-
-processes: list[Process] = []
 
 
 def run_serve(addr: tuple[str, int]):
@@ -106,10 +89,6 @@ def run_serve(addr: tuple[str, int]):
             p.join()
 
 
-def is_port_in_use(port: int) -> bool:
-    import socket
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        return s.connect_ex(('localhost', port)) == 0
 
 
 if __name__ == "__main__":

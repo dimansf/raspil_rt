@@ -1,2 +1,4 @@
-python -m raspil_rt.server C:\Users\dimansf\Documents\raspil_rt\config.txt
-set /p asd="Hit enter to continue"
+call  env.bat 
+%ECHO ON
+python.exe -m raspil_rt.server %config%
+

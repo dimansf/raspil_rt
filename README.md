@@ -1,28 +1,25 @@
 # Программа распила для Ролтек
+
 - Python 3.10 +
-- Если import error, то надо добавить в переменные среды Windows PYTHONPATH={путь до папки с проектом без названия папки} сама папка проекта должна нызываться [raspil_rt]
+
 # Настройка
-В файле [server.bat]
-```sh
-python -m raspil_rt.server {полный путь до конфига}/config.txt
-set /p asd="Hit enter to continue"
-```
+
 В [config.txt] поменять 
-- out_path - вывод файлов производится в этот путь
-- log_file - сюда в файл логируются ошибки
+- out_path - вывод файлов расчета производится в этот путь
+- log_file - сюда в файл логируются ошибки обработки расета
+- config - файл конфига ( в данном случае путь до этого файла)
+- client_file - json-валидный файл для [Client.bat] (если нужна проверка работы программы интрерактивно)
+- PYTHONPATH - добавить путь папки проекта 
 ```sh
-out_path=C:\Users\user\Documents\
+out_path=C:\Users\user\Documents\output\server
 host=localhost
 port=9999
-log_file=C:\Users\user\Documents\output\raspil_perror.txt
+log_file=C:\Users\user\Documents\output\server\raspil_perror.txt
+config=C:\Users\user\Documents\raspil_rt\config.txt
+client_file="C:\Users\user\Documents\raspil_rt\tests\resources\1960_testing.txt"
+PYTHONPATH=..\\
 ```
-[Client.bat]  можно использовать для быстрой проверки
- - первый аргумент - путь до json файла с запросом
- - абсолютный путь до конфига сервера
-```sh
-cd ../
-python -m raspil_rt.client "C:\Users\user\Documents\raspil_rt\tests\resources\1960_testing.txt"  "C:\Users\user\Documents\raspil_rt\config.txt"
-set /p asd="Hit enter to continue"
+
 ```
 ## ID [0] type: int
 N 

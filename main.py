@@ -1,6 +1,6 @@
 from copy import copy
 from socket import socket
-from typing import Callable
+
 from raspil_rt.data_structs.board import CutsawList
 from raspil_rt.data_structs.board import Board, BoardStack, Cutsaw, CutsawElement, BoardsWrapper, BoardStackSet
 from multiprocessing import cpu_count
