@@ -28,8 +28,8 @@ class Program:
     """
 
     def __init__(self, boards: list[list[int]], store_boards: list[list[int]],
-                 optimize_map: dict[int, bool], priority_map: list[list[int]],
-                 width_saw: int = 4, best_elements_arrray_size: int = 2, time_metric:bool=False,
+                 priority_map: dict[int,dict[int,bool]],
+                 width_saw: int = 4, time_metric:bool=False,
                  log_path:Path=Path.home(), log_name:str='raspil_rt_log.json'):
         self.src_boards = boards
         self.src_store_boards = store_boards
@@ -39,12 +39,12 @@ class Program:
         bs2 = BoardStackSet(
             [(Board(*x), x[3]) for x in store_boards if x[3] > 0]).res
         self.store_boards: BoardStack = BoardStack(bs2)
-        self.optimize_map = optimize_map
+        
         self.priority_map = priority_map
         self.num_proc = cpu_count()
         self.width_saw = width_saw
         self.on_reaction: socket | None = None
-        CutsawElement.array_size = best_elements_arrray_size
+        self.test_round = 0
         
         self.t:TimeCounter | None =  TimeCounter(log_path.joinpath(log_name)) if time_metric else None
        
@@ -55,13 +55,13 @@ class Program:
             
         self.on_reaction = conn
 
-    def main(self, test_round: int = 6):
+    def main(self, stop_on_round: int = 0):
 
-        for stores in self.priority_map:
-            self.iteration(stores)
+        for round_num in self.priority_map:
+            self.test_round = round_num
+            self.iteration([x for x in self.priority_map[round_num]])
 
-            test_round -= 1
-            if not test_round:
+            if stop_on_round == self.test_round:
                 break
 
     def iteration(self, sclads_id: list[int]):
@@ -106,16 +106,21 @@ class Program:
         # 2. выделить лучший распил и произвести вычитание
         results = Cutsaw()
 
-        while (True):
+        is_best = boards_cutsaw.get_best_cutsaw_elements(
+            self.boards, self.store_boards)
+       
+        if is_best and is_best.last_best:
+            while 1:
+                if is_best.last_best in self.boards and\
+                    (is_best.store_board, 1) in self.store_boards:
 
-            res = boards_cutsaw.get_best_cutsaw_elements(
-                self.boards, self.store_boards)
-            if res and res.last_best:
-                self.boards -= res.last_best
-                self.store_boards -= (res.store_board, 1)
-                results += copy(res)
-            else:
-                break
+                    self.boards -= is_best.last_best
+                    self.store_boards -= (is_best.store_board, 1)
+                else:
+                    break
+            results += copy(is_best)
+    
+        
         return results
 
     def calculate_per_boards(self, boards: BoardStack, store_boards: BoardStack):
@@ -164,7 +169,7 @@ class Program:
         if remain < 0:
             return -2
         # 2. фаза проверки на условие ликвидности
-        if self.optimize_map[store_board.sclad_id]:
+        if self.priority_map[self.test_round][store_board.sclad_id]:
             if store_board.min_remain >= remain or \
                     store_board.max_remain <= remain:
                 return remain

@@ -5,7 +5,7 @@ import os.path
 from pathlib import Path
 from raspil_rt.data_structs.board import Board, Cutsaw, BoardStack, BoardsWrapper, CutsawElement
 
-from raspil_rt.convertation import TimeCounter, convertation_for_program
+from raspil_rt.convertation import TimeCounter, convertation_for_program, store_order_convertor
 
 
 import unittest
@@ -21,10 +21,10 @@ input_dict = {
 }
 
 
-out = os.path.join(os.path.dirname(__file__),
+out = Path(os.path.dirname(__file__),
                    f'out/temp/out_{datetime.now().strftime("%d_%m_%Y_%H_%M_%S")}.txt')
 
-time_log = os.path.join(os.path.dirname(__file__), 'out/time.txt')
+time_log = Path(os.path.dirname(__file__), 'out/time.txt')
 
 def ff():
     def prnt(ct: Cutsaw):
@@ -37,16 +37,21 @@ class MainTests(unittest.TestCase):
     def setUp(self):
         self.data_path = input_dict['big']
         self.out = out
+        time_log.parent.mkdir(parents=True, exist_ok=True)
+        out.parent.mkdir(parents=True, exist_ok=True)
+
         self.t = TimeCounter(Path(time_log))
         self.data = json.loads(open(self.data_path).read())
-        self.boards, self.store_boards, self.optimize = \
+        self.boards, self.store_boards = \
             convertation_for_program(
-                self.data['orders'], self.data['store'], self.data['optimize'])
-        self.store_order = self.data['store_order']
+                self.data['orders'], self.data['store'])
+        self.store_order = store_order_convertor(self.data['store_order'])
         self.width_saw = self.data['width_saw']
 
-        self.program = Program(self.boards, self.store_boards, self.optimize,
+        self.program = Program(self.boards, self.store_boards,
                                self.store_order, self.width_saw)
+      
+        
 
     def tearDown(self):
         pass
@@ -66,13 +71,15 @@ class MainTests(unittest.TestCase):
 
     def test_iteration(self):
         self.t.mark('test_iteration')
-        self.program.iteration([1])
+        self.program.test_round= 1
+        self.program.iteration([3])
         self.t.mark('test_iteration')
         self.t.write()
         with open(self.out, 'w') as f:
             f.write(str(self.program.resulted_cutsaw))
 
     def test_calculate(self):
+        self.program.test_round= 1
         store_boards = BoardStack([
             (Board(1, 2000, 3, 1, 200, 600), 3),
             (Board(1, 3000, 3, 1, 200, 600), 3),
@@ -90,7 +97,7 @@ class MainTests(unittest.TestCase):
         self.assertIsNot(res, None)
 
     def test_select_and_subtract(self):
-
+        self.program.test_round= 1
         store_boards = BoardStack([
             (Board(1, 2000, 3, 1, 200, 600), 3),
             (Board(1, 3000, 3, 1, 200, 600), 3),
@@ -107,6 +114,7 @@ class MainTests(unittest.TestCase):
         self.assertIsNot(list(cut.keys())[0].last_best, None)
 
     def test_calculate_per_boards(self):
+        self.program.test_round= 1
         store_boards = BoardStack([
             (Board(1, 2000, 3, 1, 200, 600), 3),
             (Board(1, 3000, 3, 1, 200, 600), 3),
@@ -119,6 +127,7 @@ class MainTests(unittest.TestCase):
         self.assertEqual(len(res), 2)
 
     def test_combinate(self):
+        self.program.test_round= 1
         store_board = Board(1, 2000, 3, 1, 200, 600)
         boards = BoardStack([
             (Board(1, 100, 0, ), 10),
@@ -131,7 +140,7 @@ class MainTests(unittest.TestCase):
         self.assertIsNot(res.last_best, None)
 
     def test_cutsaw_condition(self):
-        self.program.optimize_map[3] = True
+        self.program.test_round= 1
 
         store_board = Board(1, 2000, 3, 1, 200, 600)
         board = Board(1, 200, 0, )
@@ -150,16 +159,17 @@ class MainTests(unittest.TestCase):
 
 class ConversationTests(unittest.TestCase):
     def setUp(self):
-        self.path = input_dict['small']
+        self.path = input_dict['big']
 
     def tearDown(self):
         pass
 
     def test_main(self):
         data = json.loads(open(self.path).read())
-        b, s, opt = convertation_for_program(
-            data['orders'], data['store'], data['optimize'])
-        self.assertEqual(len(opt), 5)
+        b, s = convertation_for_program(
+            data['orders'], data['store'])
+        store_order = store_order_convertor(data['store_order'])
+        self.assertEqual(len(store_order), 3)
         self.assertIsInstance(b, list)
         self.assertIsInstance(b.pop(), list)
         self.assertIsInstance(s, list)

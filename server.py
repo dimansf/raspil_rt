@@ -7,7 +7,7 @@ import random
 from pathlib import Path
 from raspil_rt.convertation import is_port_in_use, load_config
 from raspil_rt.main import Program
-from raspil_rt.convertation import convertation_for_program
+from raspil_rt.convertation import convertation_for_program, store_order_convertor
 import traceback
 import os
 
@@ -34,12 +34,12 @@ def handle_program(config: dict[str, str],
 
     print('Имя отправлено')
     conn.sendall(name.encode())
-    boards, store_boards, optimize = \
+    boards, store_boards = \
         convertation_for_program(
-            data['orders'], data['store'], data['optimize'])
-
-    program = Program(boards, store_boards, optimize,
-                      data['store_order'], int(data['width_saw']))
+            data['orders'], data['store'])
+    store_order =  store_order_convertor(data['store_order'])
+    program = Program(boards, store_boards, 
+                    store_order, int(data['width_saw']))
     program.setCallcaback(conn)
     try:
         program.main()

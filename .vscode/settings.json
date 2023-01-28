@@ -10,16 +10,16 @@
   
     "python.testing.unittestEnabled": true,
     "python.analysis.typeCheckingMode": "strict",
-    "python.analysis.reportMissingTypeStubs": "false",
+    
     
     "python.linting.pylintEnabled": true,
-    "python.autoComplete.extraPaths": ["C:\\Users\\dimansf\\Documents\\"],
+    "python.autoComplete.extraPaths": ["C:\\Users\\dimansf\\Documents\\coding"],
     "python.linting.pylintArgs": [
     "--enable=W0614"
 ],
 
 "python.linting.enabled": false,
 "python.analysis.extraPaths": [
-    "C:\\Users\\dimansf\\Documents\\"
+    "C:\\Users\\dimansf\\Documents\\coding"
 ]
 }

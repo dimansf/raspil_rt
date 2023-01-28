@@ -25,9 +25,19 @@ def load_config(path: str) -> dict[str, str]:
     except:
         raise Exception('Cant load config')
 
+def store_order_convertor(store_orders:list[dict[str,bool]]):
+    new_d:dict[int, dict[int,bool]] = {}
+    for i, el in enumerate(store_orders, 1):
+        sub:dict[int,bool] = {}
+        [sub.setdefault(int(e), el[e]) for e in el]
+        new_d.setdefault(i, sub) 
+    
+    return new_d
+
+
 
 def convertation_for_program(boards: list[list[int]], store_boards: list[list[int]],
-                             optimize: dict[str, bool]):
+                             ):
     '''
     Изначально store_boards
         [ ид / длина / количество / максимальный остаток / минимальный остаток / склад_ид ]
@@ -41,14 +51,13 @@ def convertation_for_program(boards: list[list[int]], store_boards: list[list[in
 
     _boards: list[list[int]] = []
     _store_boards: list[list[int]] = []
-    _optimize: dict[int, bool] = {}
-
+    
     _boards = [[x[0], x[1], 0, x[2], 0, 0] for x in boards]
     _store_boards = [[x[0], x[1], x[5], x[2], x[4], x[3]]
                      for x in store_boards]
-    [_optimize.setdefault(int(k), optimize[k]) for k in optimize]
+    
 
-    return (_boards, _store_boards, _optimize)
+    return (_boards, _store_boards)
 
 
 def load_simple_config(file: str) -> dict[str, str]:

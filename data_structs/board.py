@@ -97,20 +97,20 @@ class BoardStack(dict[Board, int]):
         '''Вся длина палок в стаке'''
         return sum([b.len * self[b] for b in self])
 
-    def __contains__(self, other: Union['BoardStack', Board],  # type: ignore[override]
-                     amount: int = 1) -> bool:
+    def __contains__(self, other: Union['BoardStack', tuple[Board, int]],  # type: ignore[override]
+                     ) -> bool:
         '''Подмножество other входит в множество self'''
-        if isinstance(other, Board):
+        if isinstance(other, tuple):
             try:
-                if self[other] < amount:
+                if self[other[0]] < other[1]:
                     return False
             except KeyError:
                 return False
 
             return True
-
+    
         for k in other:
-            if not self.__contains__(k, other[k]):
+            if not self.__contains__((k, other[k])):
                 return False
         return True
 
@@ -197,7 +197,7 @@ class CutsawElement(List[BoardStack]):
     board - доска
     boards_combinations - набор досок комбинаций
     """
-    array_size = 2
+    array_size = 1
 
     def __init__(self, store_board: Board, seq: Iterable[BoardStack] = [],
                  lb: BoardStack | None = None):
@@ -350,7 +350,7 @@ class CutsawList(list[CutsawElement]):
         """
         remain_max = -1
 
-        stores = [el for el in self if el.store_board in store_boards]
+        stores = [el for el in self if( el.store_board, 1) in store_boards]
         bests = sorted([el.get_best_stack(boards) for el in stores],
                        key=lambda el: el.last_best.remain 
                        if el and el.last_best else remain_max)
