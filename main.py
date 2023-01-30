@@ -116,9 +116,10 @@ class Program:
 
                     self.boards -= is_best.last_best
                     self.store_boards -= (is_best.store_board, 1)
+                    results += copy(is_best)
                 else:
                     break
-            results += copy(is_best)
+            
     
         
         return results

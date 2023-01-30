@@ -65,6 +65,7 @@ class MainTests(unittest.TestCase):
         self.t.write()
         with open(self.out, 'w') as f:
             f.write(str(self.program.resulted_cutsaw))
+        
 
     def test___init__(self):
         pass
@@ -72,7 +73,7 @@ class MainTests(unittest.TestCase):
     def test_iteration(self):
         self.t.mark('test_iteration')
         self.program.test_round= 1
-        self.program.iteration([3])
+        self.program.iteration([1])
         self.t.mark('test_iteration')
         self.t.write()
         with open(self.out, 'w') as f:
