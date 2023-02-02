@@ -220,10 +220,10 @@ class CutsawElement(List[BoardStack]):
 
     def add_best(self, other: BoardStack):
         if len(self) == CutsawElement.array_size:
-
-            smallest = sorted(
-                self, key=lambda el: el.remain - other.remain)[-1]
-            self[self.index(smallest)] = other
+            best = self[0]
+            if best.remain > other.remain:
+                self[0] = other
+            
             return
         self.append(other)
 

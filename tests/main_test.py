@@ -17,7 +17,10 @@ from datetime import datetime
 
 input_dict = {
     'big':  os.path.join(os.path.dirname(__file__), 'resources/big.json'),
-    'small': os.path.join(os.path.dirname(__file__), 'resources/small.json')
+    'small': os.path.join(os.path.dirname(__file__), 'resources/small.json'),
+    'new':os.path.join(os.path.dirname(__file__), 'resources/without_max_from_sclad.txt'),
+    '2055':os.path.join(os.path.dirname(__file__), 'resources/2055_new_raspil.json'),
+    
 }
 
 
@@ -35,7 +38,7 @@ def ff():
 class MainTests(unittest.TestCase):
 
     def setUp(self):
-        self.data_path = input_dict['big']
+        self.data_path = input_dict['2055']
         self.out = out
         time_log.parent.mkdir(parents=True, exist_ok=True)
         out.parent.mkdir(parents=True, exist_ok=True)
