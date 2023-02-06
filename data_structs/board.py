@@ -44,7 +44,7 @@ class Board():
 
     def is_same_board(self, other: 'Board'):
         return self.len == other.len and self.num_id == other.num_id and\
-             self.sclad_id == other.sclad_id
+            self.sclad_id == other.sclad_id
 
     def __hash__(self) -> int:
         return self._id
@@ -108,7 +108,7 @@ class BoardStack(dict[Board, int]):
                 return False
 
             return True
-    
+
         for k in other:
             if not self.__contains__((k, other[k])):
                 return False
@@ -212,7 +212,7 @@ class CutsawElement(List[BoardStack]):
                              lb=self.last_best)
 
     def __eq__(self, other: 'CutsawElement') -> bool:  # type: ignore[override]
-        if self.store_board == other.store_board :
+        if self.store_board == other.store_board:
 
             return self.last_best == other.last_best
 
@@ -223,7 +223,7 @@ class CutsawElement(List[BoardStack]):
             best = self[0]
             if best.remain > other.remain:
                 self[0] = other
-            
+
             return
         self.append(other)
 
@@ -245,13 +245,16 @@ class CutsawElement(List[BoardStack]):
         return self
 
     def str(self: 'CutsawElement', amount: int) -> str:
-        lb = f'{self.last_best}' if self.last_best else '' 
-        return '\n { "store_board":' + f' {self.store_board.str(amount)},' \
-            + f'"amount":{amount},' + \
-            f'"boards": {lb}' + '}'
-          
+        lb = f'{self.last_best}' if self.last_best else ''
+        r = self.last_best.remain if self.last_best else ''
+        st = f'"store_board":  {self.store_board.str(amount)}'
+        am = f'"amount":{amount}'
+        rem = f'"remain": {r}'
+        bs = f'"boards": {lb}'
+        return '{' + ','.join([st, am, bs, rem])+'}'
+
     def __str__(self) -> str:   # type: ignore[override]
-        
+
         raise NotImplemented()
 
 
@@ -350,13 +353,13 @@ class CutsawList(list[CutsawElement]):
         """
         remain_max = -1
 
-        stores = [el for el in self if( el.store_board, 1) in store_boards]
+        stores = [el for el in self if(el.store_board, 1) in store_boards]
         bests = sorted([el.get_best_stack(boards) for el in stores],
-                       key=lambda el: el.last_best.remain 
+                       key=lambda el: el.last_best.remain
                        if el and el.last_best else remain_max)
         try:
-            return next(x for x in bests if x.last_best and\
-                 x.last_best.remain != -1)
-           
-        except (AttributeError , IndexError , StopIteration):
+            return next(x for x in bests if x.last_best and
+                        x.last_best.remain != -1)
+
+        except (AttributeError, IndexError, StopIteration):
             return None

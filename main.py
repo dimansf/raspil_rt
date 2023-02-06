@@ -90,11 +90,14 @@ class Program:
         results = Cutsaw()
 
         while True:
-
+           
             calcs = self.calculate_per_boards(
                 self.boards.filter(_id), self.store_boards.filter(_id, sclad_id))
             res = self.select_and_subtract(calcs)
-
+            
+            if self.on_reaction:
+           
+                self.on_reaction.sendall(str(res).encode())
             if len(res):
                 results += res
             else:
@@ -138,23 +141,29 @@ class Program:
     def combinate(self,  boards: BoardsWrapper, store_board: Board,
                   current_best: CutsawElement, current_stack: BoardStack = BoardStack()):
         try:
+            
             iteration_board, amount = boards.pop()
         except IndexError:
             return current_best
-
+        try:
+            if current_best[0].remain == 0:
+                return current_best
+        except:
+            pass
+        
         for i in range(amount + 1):
+           
             remain = self.cutsaw_condition(
                 current_stack, iteration_board, i, store_board)
             if remain == -2:
                 break
+            cs = (current_stack + (iteration_board, i)) if i > 0 else current_stack
+            cs.remain = remain
+           
             if remain >= 0:
-                good_stack = current_stack
-                if i > 0:
-                    good_stack = current_stack + (iteration_board, i)
-                    good_stack.remain = remain
-
-                    current_best.add_best(good_stack)
-                self.combinate(boards, store_board,  current_best, good_stack)
+                current_best.add_best(cs)
+                
+            self.combinate(boards, store_board,  current_best, cs)
 
         boards.shift()
         return current_best
@@ -163,7 +172,8 @@ class Program:
         # 1. фаза проверки на возможность распила
         total_saw_width = (current_stack.amount + amount) * self.width_saw
         total_len = current_stack.total_len + amount * board.len + total_saw_width
-        remain = store_board.len + self.width_saw - total_len
+        remain = store_board.len - total_len
+        remain = 0 if 0 > remain >= -self.width_saw else remain
 
         if remain > store_board.len + self.width_saw:
             raise RemainError()

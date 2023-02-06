@@ -30,7 +30,7 @@ def handle_program(config: dict[str, str],
 
     data = loads(data)
 
-    name = f'{bytes([random.randint(65, 90) for _ in range(100)]).decode()}.txt'
+    name = f'{bytes([random.randint(65, 90) for _ in range(32)]).decode()}.json'
 
     print('Имя отправлено')
     conn.sendall(name.encode())

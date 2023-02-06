@@ -20,12 +20,14 @@ input_dict = {
     'small': os.path.join(os.path.dirname(__file__), 'resources/small.json'),
     'new':os.path.join(os.path.dirname(__file__), 'resources/without_max_from_sclad.txt'),
     '2055':os.path.join(os.path.dirname(__file__), 'resources/2055_new_raspil.json'),
+    '2051':os.path.join(os.path.dirname(__file__), 'resources/2051.json'),
+    '2052':os.path.join(os.path.dirname(__file__), 'resources/2052.json'),
     
 }
 
 
 out = Path(os.path.dirname(__file__),
-                   f'out/temp/out_{datetime.now().strftime("%d_%m_%Y_%H_%M_%S")}.txt')
+                   f'out/temp/out_{datetime.now().strftime("%d_%m_%Y_%H_%M_%S")}.json')
 
 time_log = Path(os.path.dirname(__file__), 'out/time.txt')
 
@@ -38,7 +40,7 @@ def ff():
 class MainTests(unittest.TestCase):
 
     def setUp(self):
-        self.data_path = input_dict['2055']
+        self.data_path = input_dict['2051']
         self.out = out
         time_log.parent.mkdir(parents=True, exist_ok=True)
         out.parent.mkdir(parents=True, exist_ok=True)
