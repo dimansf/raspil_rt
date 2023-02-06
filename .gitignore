@@ -19,3 +19,4 @@ tests/out/out*.json
 tests/out/out*.txt
 tests/out/time.txt
 tests/out/temp/out*.*
+config.txt

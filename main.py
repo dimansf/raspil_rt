@@ -74,8 +74,7 @@ class Program:
         for _id in ids:
             
             res = self.calculate(sclads_id, _id)
-            if self.on_reaction:
-                self.on_reaction.sendall(str(res).encode())
+          
                 
             self.resulted_cutsaw += res
 
@@ -96,8 +95,10 @@ class Program:
             res = self.select_and_subtract(calcs)
             
             if self.on_reaction:
-           
-                self.on_reaction.sendall(str(res).encode())
+                try:
+                    self.on_reaction.sendall(str(res).encode())
+                except:
+                    pass
             if len(res):
                 results += res
             else:

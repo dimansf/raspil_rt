@@ -47,6 +47,7 @@ def handle_program(config: dict[str, str],
         Path(config['out_path']).mkdir(parents=True, exist_ok=True)
         with open(out_file, 'w') as f:
             f.write(str(program.resulted_cutsaw))
+        conn.sendall('%end%'.encode())
     except Exception as ex:
         Path(config['log_file']).parent.mkdir(parents=True, exist_ok=True)
         with open(config['log_file'], 'w') as f:
@@ -54,7 +55,7 @@ def handle_program(config: dict[str, str],
                 type(ex), ex, tb=ex.__traceback__)
             f.write("".join(tb_str))
     finally:
-        conn.sendall('%end%'.encode())
+        
         conn.close()
 
 
