@@ -39,7 +39,7 @@ def handle_program(config: dict[str, str],
             data['orders'], data['store'])
     store_order =  store_order_convertor(data['store_order'])
     program = Program(boards, store_boards, 
-                    store_order, int(data['width_saw']))
+                    store_order, int(data['width_saw']), int(data['threshold']))
     program.setCallcaback(conn)
     try:
         program.main()

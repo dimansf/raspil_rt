@@ -29,7 +29,7 @@ class Program:
 
     def __init__(self, boards: list[list[int]], store_boards: list[list[int]],
                  priority_map: dict[int,dict[int,bool]],
-                 width_saw: int = 4, time_metric:bool=False,
+                 width_saw: int = 4,threshold:int=0, time_metric:bool=False,
                  log_path:Path=Path.home(), log_name:str='raspil_rt_log.json'):
         self.src_boards = boards
         self.src_store_boards = store_boards
@@ -39,7 +39,7 @@ class Program:
         bs2 = BoardStackSet(
             [(Board(*x), x[3]) for x in store_boards if x[3] > 0]).res
         self.store_boards: BoardStack = BoardStack(bs2)
-        
+        self.threshold = threshold
         self.priority_map = priority_map
         self.num_proc = cpu_count()
         self.width_saw = width_saw
@@ -146,7 +146,7 @@ class Program:
         except IndexError:
             return current_best
         try:
-            if current_best[0].remain == 0:
+            if current_best[0].remain <= self.threshold:
                 return current_best
         except:
             pass
