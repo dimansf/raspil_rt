@@ -10,14 +10,19 @@ from pathlib import Path
 class Program:
     """
         boards - доски в заказе
+        [
+            [id, len, amount]
+        ]
         store_boards  - доски со складов на распил
         [ 
             [id, len, store_id, amount, min_rem, max_rem],
         ] 
         priority_map - порядок обхода складов по номерам
-        [
-            [1,4], [2], [3], [5]],
-        ]
+        {
+            round_num: {
+                sclad_id:flag,
+            },
+        }
         optimize_map -параметры оптимизации по номерам складов
         {
             sclad_id : optimize_flag
@@ -113,16 +118,16 @@ class Program:
         is_best = boards_cutsaw.get_best_cutsaw_elements(
             self.boards, self.store_boards)
        
-        if is_best and is_best.last_best:
-            while 1:
-                if is_best.last_best in self.boards and\
-                    (is_best.store_board, 1) in self.store_boards:
-
-                    self.boards -= is_best.last_best
-                    self.store_boards -= (is_best.store_board, 1)
-                    results += copy(is_best)
-                else:
-                    break
+        
+        while 1:
+            if is_best and is_best.last_best and is_best.last_best in self.boards and\
+                (is_best.store_board, 1) in self.store_boards:
+                
+                self.boards -= is_best.last_best 
+                self.store_boards -= (is_best.store_board, 1)
+                results += copy(is_best)
+            else:
+                break
             
     
         
@@ -174,7 +179,7 @@ class Program:
         total_saw_width = (current_stack.amount + amount) * self.width_saw
         total_len = current_stack.total_len + amount * board.len + total_saw_width
         remain = store_board.len - total_len
-        remain = 0 if 0 > remain >= -self.width_saw else remain
+        remain = abs(remain) if 0 > remain >= -self.width_saw else remain
 
         if remain > store_board.len + self.width_saw:
             raise RemainError()
